@@ -78,6 +78,44 @@ class PackageController extends Controller
         ]);
     }
 
+    public function generateDummy(Request $request): JsonResponse
+    {
+        $request->validate([
+            'count' => 'required|integer|min:1|max:50',
+        ]);
+
+        $count = $request->count;
+        $categories = ['home', 'bisnis', 'dedicated'];
+        $speeds = [10, 20, 30, 50, 100, 150, 200, 300, 500];
+
+        $generated = [];
+        for ($i = 0; $i < $count; $i++) {
+            $cat = $categories[array_rand($categories)];
+            $spd = $speeds[array_rand($speeds)];
+            $price = $spd * 10000 + rand(1, 9) * 5000;
+
+            $package = Package::create([
+                'name'           => strtoupper($cat) . " " . $spd . " Mbps",
+                'category'       => $cat,
+                'speed_download' => $spd,
+                'speed_upload'   => $spd / 2,
+                'price'          => $price,
+                'contention'     => '1:' . rand(1, 8),
+                'description'    => "Paket internet {$cat} dengan kecepatan {$spd} Mbps.",
+                'is_active'      => true,
+                'sort_order'     => rand(0, 100),
+            ]);
+            $generated[] = $package->toJsonData();
+        }
+
+        return response()->json([
+            'success'  => true,
+            'message'  => "Berhasil generate {$count} data paket dummy.",
+            'packages' => $generated,
+        ]);
+    }
+
+
     private function rules(): array
     {
         return [

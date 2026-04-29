@@ -18,12 +18,16 @@ Route::post('/packages', [\App\Http\Controllers\PackageController::class, 'store
 Route::put('/packages/{package}', [\App\Http\Controllers\PackageController::class, 'update'])->name('packages.update');
 Route::delete('/packages/{package}', [\App\Http\Controllers\PackageController::class, 'destroy'])->name('packages.destroy');
 Route::patch('/packages/{package}/toggle', [\App\Http\Controllers\PackageController::class, 'toggleStatus'])->name('packages.toggle');
+Route::post('/packages/generate-dummy', [\App\Http\Controllers\PackageController::class, 'generateDummy'])->name('packages.generate_dummy');
+
 
 Route::get('/customers', [\App\Http\Controllers\CustomerController::class, 'index'])->name('customers.index');
 Route::post('/customers', [\App\Http\Controllers\CustomerController::class, 'store'])->name('customers.store');
 Route::put('/customers/{customer}', [\App\Http\Controllers\CustomerController::class, 'update'])->name('customers.update');
 Route::delete('/customers/{customer}', [\App\Http\Controllers\CustomerController::class, 'destroy'])->name('customers.destroy');
 Route::patch('/customers/{customer}/status', [\App\Http\Controllers\CustomerController::class, 'updateStatus'])->name('customers.status');
+Route::post('/customers/generate-dummy', [\App\Http\Controllers\CustomerController::class, 'generateDummy'])->name('customers.generate_dummy');
+
 
 Route::get('/invoices', [\App\Http\Controllers\InvoiceController::class, 'index'])->name('invoices.index');
 Route::post('/invoices/generate-mass', [\App\Http\Controllers\InvoiceController::class, 'generateMass'])->name('invoices.generate_mass');

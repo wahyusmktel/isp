@@ -29,13 +29,23 @@ $statusCfg = [
         <h1 class="text-xl font-bold text-gray-900">Pelanggan</h1>
         <p class="text-sm text-gray-400 mt-0.5">Kelola data pelanggan aktif dan riwayat layanan</p>
     </div>
-    <button onclick="openModal('create')"
-            class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors self-start sm:self-auto">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
-        </svg>
-        Tambah Pelanggan
-    </button>
+    <div class="flex items-center gap-2 self-start sm:self-auto">
+        <button onclick="openDummyModal()"
+                class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+            </svg>
+            Generate Dummy
+        </button>
+        <button onclick="openModal('create')"
+                class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
+            </svg>
+            Tambah Pelanggan
+        </button>
+    </div>
+
 </div>
 
 {{-- ===== Stats ===== --}}
@@ -399,7 +409,57 @@ $statusCfg = [
     </div>
 </div>
 
+{{-- ===== Generate Dummy Modal ===== --}}
+<div id="dummy-modal" class="fixed inset-0 z-50 hidden" aria-modal="true" role="dialog">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeDummyModal()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div id="dummy-card"
+             class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm
+                    transition-all duration-200 scale-95 opacity-0">
+
+            {{-- Header --}}
+            <div class="flex items-start justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+                <div>
+                    <h2 class="text-base font-bold text-gray-900">Generate Pelanggan Dummy</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">Buat data pelanggan contoh secara otomatis</p>
+                </div>
+                <button onclick="closeDummyModal()"
+                        class="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="dummy-form" onsubmit="submitDummy(event)">
+                <div class="px-6 py-5">
+                    <label class="lbl">Jumlah Data (1 - 100)</label>
+                    <input type="number" id="f-dummy-count" min="1" max="100" value="10"
+                           class="inp w-full" required>
+                    <p class="text-[10px] text-gray-400 mt-2 italic">Data akan dibuat dengan identitas acak dan status Aktif.</p>
+                </div>
+
+                {{-- Footer --}}
+                <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100">
+                    <button type="button" onclick="closeDummyModal()"
+                            class="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" id="dummy-save-btn"
+                            class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-gray-900 hover:bg-gray-800 rounded-xl transition-colors disabled:opacity-60">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                        </svg>
+                        <span id="dummy-save-text">Generate</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {{-- ===== Delete Confirm Modal ===== --}}
+
 <div id="del-modal" class="fixed inset-0 z-50 hidden" role="dialog">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeDelModal()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4">
@@ -666,7 +726,77 @@ async function setStatus(id, status, btn) {
     }
 }
 
+// ─── Dummy Generator ─────────────────────────────────────────────────────────
+function openDummyModal() {
+    const modal = document.getElementById('dummy-modal');
+    const card  = document.getElementById('dummy-card');
+    document.getElementById('dummy-form').reset();
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        card.classList.remove('scale-95','opacity-0');
+        card.classList.add('scale-100','opacity-100');
+    }));
+}
+
+function closeDummyModal() {
+    const card  = document.getElementById('dummy-card');
+    const modal = document.getElementById('dummy-modal');
+    card.classList.add('scale-95','opacity-0');
+    card.classList.remove('scale-100','opacity-100');
+    setTimeout(() => { modal.classList.add('hidden'); document.body.style.overflow = ''; }, 200);
+}
+
+async function submitDummy(e) {
+    e.preventDefault();
+    const btn   = document.getElementById('dummy-save-btn');
+    const txt   = document.getElementById('dummy-save-text');
+    const count = document.getElementById('f-dummy-count').value;
+
+    btn.disabled    = true;
+    txt.textContent = 'Generating…';
+
+    try {
+        const res  = await fetch('/customers/generate-dummy', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': CSRF,
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({ count }),
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            closeDummyModal();
+            showToast('success', data.message);
+
+            const tbody  = document.getElementById('cust-tbody');
+            const emptyR = document.getElementById('empty-row');
+            if (emptyR) emptyR.remove();
+
+            // Add new rows to table and state
+            data.customers.forEach(c => {
+                tbody.insertAdjacentHTML('afterbegin', buildRow(c));
+                __custs.unshift(c);
+            });
+
+            updateStats();
+            applyFilters();
+        } else {
+            showToast('error', data.message || 'Gagal generate data.');
+        }
+    } catch {
+        showToast('error', 'Koneksi bermasalah.');
+    } finally {
+        btn.disabled    = false;
+        txt.textContent = 'Generate';
+    }
+}
+
 // ─── Modal open / close ───────────────────────────────────────────────────────
+
 function openModal(mode, cust = null) {
     const modal = document.getElementById('cust-modal');
     const card  = document.getElementById('modal-card');

@@ -81,6 +81,47 @@ class CustomerController extends Controller
         ]);
     }
 
+    public function generateDummy(Request $request): JsonResponse
+    {
+        $request->validate([
+            'count' => 'required|integer|min:1|max:100',
+        ]);
+
+        $count = $request->count;
+        $packages = Package::where('is_active', true)->pluck('id')->toArray();
+
+        if (empty($packages)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal generate: Belum ada paket internet yang aktif.',
+            ], 422);
+        }
+
+        $generated = [];
+        for ($i = 0; $i < $count; $i++) {
+            $customer = Customer::create([
+                'name'       => fake()->name(),
+                'email'      => fake()->unique()->safeEmail(),
+                'phone'      => '08' . fake()->numerify('##########'),
+                'address'    => fake()->address(),
+                'package_id' => $packages[array_rand($packages)],
+                'ip_address' => fake()->ipv4(),
+                'pppoe_user' => fake()->userName(),
+                'status'     => 'aktif',
+                'join_date'  => now()->subDays(rand(0, 30))->format('Y-m-d'),
+            ]);
+            $customer->load('package:id,name,category');
+            $generated[] = $customer->toJsonData();
+        }
+
+        return response()->json([
+            'success'   => true,
+            'message'   => "Berhasil generate {$count} data pelanggan dummy.",
+            'customers' => $generated,
+        ]);
+    }
+
+
     private function rules(): array
     {
         return [
