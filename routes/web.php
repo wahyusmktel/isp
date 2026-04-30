@@ -98,6 +98,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports', [\App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
 
     Route::get('/employees', [\App\Http\Controllers\EmployeeController::class, 'index'])->name('employees.index');
+    Route::get('/employees/{employee}/idcard', [\App\Http\Controllers\EmployeeController::class, 'printIdCard'])->name('employees.idcard');
+    Route::post('/employees', [\App\Http\Controllers\EmployeeController::class, 'store'])->name('employees.store');
+    Route::put('/employees/{employee}', [\App\Http\Controllers\EmployeeController::class, 'update'])->name('employees.update');
+    Route::delete('/employees/{employee}', [\App\Http\Controllers\EmployeeController::class, 'destroy'])->name('employees.destroy');
 
     Route::get('/payroll', [\App\Http\Controllers\PayrollController::class, 'index'])->name('payroll.index');
     Route::post('/payroll/generate', [\App\Http\Controllers\PayrollController::class, 'generate'])->name('payroll.generate');

@@ -131,8 +131,8 @@ $avatarColors = [
     @php $color = $avatarColors[$emp->id % count($avatarColors)]; @endphp
     <div class="bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-md transition-shadow group relative">
 
-        {{-- Status dot --}}
-        <div class="absolute top-4 right-4">
+        {{-- Status dot + ID Card button --}}
+        <div class="absolute top-4 right-4 flex items-center gap-1.5">
             @if($emp->status === 'aktif')
                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-50 text-green-700">
                     <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Aktif
@@ -146,6 +146,16 @@ $avatarColors = [
                     <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>Resign
                 </span>
             @endif
+            <a href="{{ route('employees.idcard', $emp->id) }}" target="_blank"
+               title="Cetak ID Card"
+               class="w-6 h-6 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-500 flex items-center justify-center transition-colors flex-shrink-0">
+                {{-- ID Card icon --}}
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <rect x="2" y="5" width="20" height="14" rx="2"/>
+                    <circle cx="8" cy="10" r="2"/>
+                    <path stroke-linecap="round" d="M14 9h4M14 12h4M6 16h12"/>
+                </svg>
+            </a>
         </div>
 
         {{-- Avatar --}}

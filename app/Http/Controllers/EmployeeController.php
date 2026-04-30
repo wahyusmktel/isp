@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class EmployeeController extends Controller
 {
@@ -81,6 +83,40 @@ class EmployeeController extends Controller
             'success' => true,
             'message' => "Pegawai \"{$name}\" berhasil dihapus.",
         ]);
+    }
+
+    public function printIdCard(Employee $employee)
+    {
+        $avatarColors = ['#7c3aed', '#2563eb', '#0891b2', '#059669', '#ea580c', '#e11d48'];
+        $avatarBg = $avatarColors[$employee->id % count($avatarColors)];
+
+        $brandColor = '#0284c7';
+
+        $deptColor = match($employee->departemen) {
+            'manajemen'    => '#6d28d9',
+            'teknis'       => '#1d4ed8',
+            'noc'          => '#0369a1',
+            'keuangan'     => '#065f46',
+            'cs'           => '#c2410c',
+            default        => '#374151',
+        };
+        $deptBg = match($employee->departemen) {
+            'manajemen'    => '#ede9fe',
+            'teknis'       => '#dbeafe',
+            'noc'          => '#e0f2fe',
+            'keuangan'     => '#d1fae5',
+            'cs'           => '#ffedd5',
+            default        => '#f3f4f6',
+        };
+
+        $pdf = Pdf::loadView('employees.idcard', compact(
+            'employee', 'avatarBg', 'brandColor', 'deptColor', 'deptBg'
+        ));
+
+        // CR80 standard: 54mm × 85.6mm in points (1mm = 2.8346pt)
+        $pdf->setPaper([0, 0, 153.07, 242.65]);
+
+        return $pdf->stream("IDCard-{$employee->employee_number}.pdf");
     }
 
     private function rules($id = null): array
