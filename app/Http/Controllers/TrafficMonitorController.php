@@ -148,6 +148,38 @@ class TrafficMonitorController extends Controller
     }
 
     /**
+     * Fetch live stats for ether4-Internet_In interface + router uptime.
+     */
+    public function fetchInterfaceStats(Router $router): JsonResponse
+    {
+        $svc  = new MikrotikService();
+        $conn = $svc->connect($router->host, $router->api_port, $router->username, $router->password, 3);
+
+        if (!$conn['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => "Gagal terhubung ke {$router->name}: {$conn['message']}",
+            ]);
+        }
+
+        $traffic   = $svc->getInterfaceTraffic('ether4-Internet_In');
+        $resource  = $svc->getSystemResource();
+        $interfaces = $svc->getInterfaces();
+        $svc->close();
+
+        $iface = collect($interfaces)->firstWhere('name', 'ether4-Internet_In') ?? [];
+
+        return response()->json([
+            'success'      => true,
+            'download_bps' => (int) ($traffic['rx-bits-per-second'] ?? 0),
+            'upload_bps'   => (int) ($traffic['tx-bits-per-second'] ?? 0),
+            'rx_byte'      => (int) ($iface['rx-byte'] ?? 0),
+            'tx_byte'      => (int) ($iface['tx-byte'] ?? 0),
+            'uptime'       => $resource['uptime'] ?? '—',
+        ]);
+    }
+
+    /**
      * Try to extract PPPoE username from queue name or target.
      */
     private function extractPppoeUser(string $name, string $target): string

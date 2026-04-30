@@ -61,6 +61,81 @@
     </div>
 </div>
 
+{{-- Live Interface Monitor: ether4-Internet_In --}}
+<div class="bg-white rounded-2xl border border-gray-100 p-5 mb-5" id="iface-monitor">
+    <div class="flex flex-col lg:flex-row lg:items-start gap-4">
+        {{-- Chart column --}}
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Live Interface</p>
+                    <p class="text-sm font-bold text-gray-800 font-mono">ether4-Internet_In</p>
+                </div>
+                <span id="iface-status" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500">
+                    <span id="iface-dot" class="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block"></span>
+                    <span id="iface-status-txt">Menghubungkan...</span>
+                </span>
+            </div>
+            {{-- Sparkline SVG --}}
+            <div class="relative h-24 bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
+                <svg id="iface-chart" class="w-full h-full absolute inset-0" preserveAspectRatio="none" viewBox="0 0 300 96">
+                    <defs>
+                        <linearGradient id="dlGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25"/>
+                            <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+                        </linearGradient>
+                        <linearGradient id="ulGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#10b981" stop-opacity="0.20"/>
+                            <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+                        </linearGradient>
+                    </defs>
+                    {{-- Grid lines --}}
+                    <line x1="0" y1="32" x2="300" y2="32" stroke="#e5e7eb" stroke-width="0.5"/>
+                    <line x1="0" y1="64" x2="300" y2="64" stroke="#e5e7eb" stroke-width="0.5"/>
+                    {{-- Fill areas --}}
+                    <polygon id="dl-fill" points="" fill="url(#dlGrad)"/>
+                    <polygon id="ul-fill" points="" fill="url(#ulGrad)"/>
+                    {{-- Lines --}}
+                    <polyline id="dl-line" points="" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+                    <polyline id="ul-line" points="" fill="none" stroke="#10b981" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+                </svg>
+                {{-- Legend overlay --}}
+                <div class="absolute top-2 right-2.5 flex items-center gap-3 text-[9px] text-gray-500">
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-3 h-0.5 bg-blue-500 inline-block rounded-full"></span> Download
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-3 h-0.5 bg-emerald-500 inline-block rounded-full"></span> Upload
+                    </span>
+                </div>
+                {{-- Scale hint --}}
+                <span id="iface-scale" class="absolute bottom-1.5 left-2.5 text-[9px] text-gray-400 font-mono"></span>
+            </div>
+        </div>
+
+        {{-- Stats column --}}
+        <div class="grid grid-cols-2 lg:grid-cols-1 gap-2.5 lg:min-w-[180px]">
+            <div class="bg-blue-50 rounded-xl px-4 py-2.5">
+                <p class="text-[9px] text-blue-400 uppercase tracking-wide mb-0.5">↓ Download</p>
+                <p class="text-base font-bold text-blue-700 font-mono leading-none" id="iface-dl">—</p>
+            </div>
+            <div class="bg-emerald-50 rounded-xl px-4 py-2.5">
+                <p class="text-[9px] text-emerald-400 uppercase tracking-wide mb-0.5">↑ Upload</p>
+                <p class="text-base font-bold text-emerald-700 font-mono leading-none" id="iface-ul">—</p>
+            </div>
+            <div class="bg-indigo-50 rounded-xl px-4 py-2.5">
+                <p class="text-[9px] text-indigo-400 uppercase tracking-wide mb-0.5">Uptime Router</p>
+                <p class="text-sm font-bold text-indigo-700 font-mono leading-none" id="iface-uptime">—</p>
+            </div>
+            <div class="bg-gray-50 rounded-xl px-4 py-2.5 border border-gray-100">
+                <p class="text-[9px] text-gray-400 uppercase tracking-wide mb-0.5">Total Bandwidth</p>
+                <p class="text-xs font-semibold text-blue-600 leading-snug" id="iface-rx">— RX</p>
+                <p class="text-xs font-semibold text-emerald-600 leading-snug" id="iface-tx">— TX</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Toolbar --}}
 <div class="bg-white rounded-2xl border border-gray-100 px-4 py-3 mb-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
     <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-full sm:w-72">
@@ -283,6 +358,100 @@ document.getElementById('auto-toggle').addEventListener('change', e => {
 
 startAuto();
 if (document.getElementById('router-select').value) doFetch();
+
+// ─── Interface live monitor ───────────────────────────────────────────────
+const CHART_POINTS = 30;
+const CHART_W = 300, CHART_H = 96;
+let ifaceDl = new Array(CHART_POINTS).fill(0);
+let ifaceUl = new Array(CHART_POINTS).fill(0);
+
+function setIfaceStatus(ok) {
+    const dot = document.getElementById('iface-dot');
+    const txt = document.getElementById('iface-status-txt');
+    const wrap = document.getElementById('iface-status');
+    if (ok) {
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block';
+        txt.textContent = 'Live';
+        wrap.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-green-100 text-green-700';
+    } else {
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-red-400 inline-block';
+        txt.textContent = 'Offline';
+        wrap.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-red-50 text-red-500';
+    }
+}
+
+function buildSparkPoints(arr, maxVal) {
+    if (maxVal <= 0) maxVal = 1;
+    const step = CHART_W / (CHART_POINTS - 1);
+    return arr.map((v, i) => {
+        const x = i * step;
+        const y = CHART_H - 4 - ((v / maxVal) * (CHART_H - 12));
+        return x + ',' + y;
+    }).join(' ');
+}
+
+function buildFillPoints(arr, maxVal) {
+    if (maxVal <= 0) maxVal = 1;
+    const step = CHART_W / (CHART_POINTS - 1);
+    const top = arr.map((v, i) => {
+        const x = i * step;
+        const y = CHART_H - 4 - ((v / maxVal) * (CHART_H - 12));
+        return x + ',' + y;
+    });
+    const bottom = [
+        (CHART_W) + ',' + (CHART_H),
+        '0,' + (CHART_H),
+    ];
+    return [...top, ...bottom].join(' ');
+}
+
+function updateIfaceChart() {
+    const maxVal = Math.max(...ifaceDl, ...ifaceUl, 1);
+    document.getElementById('dl-line').setAttribute('points', buildSparkPoints(ifaceDl, maxVal));
+    document.getElementById('ul-line').setAttribute('points', buildSparkPoints(ifaceUl, maxVal));
+    document.getElementById('dl-fill').setAttribute('points', buildFillPoints(ifaceDl, maxVal));
+    document.getElementById('ul-fill').setAttribute('points', buildFillPoints(ifaceUl, maxVal));
+
+    // Show scale hint
+    const scaleEl = document.getElementById('iface-scale');
+    scaleEl.textContent = 'maks ' + fmtSpeed(maxVal);
+}
+
+async function fetchIfaceStats() {
+    const rid = document.getElementById('router-select').value;
+    if (!rid) return;
+    try {
+        const res = await fetch(`/traffic/${rid}/interface`, { headers: { 'Accept': 'application/json' } });
+        const data = await res.json();
+        if (!data.success) { setIfaceStatus(false); return; }
+
+        setIfaceStatus(true);
+        ifaceDl.push(data.download_bps); ifaceDl.shift();
+        ifaceUl.push(data.upload_bps);   ifaceUl.shift();
+
+        document.getElementById('iface-dl').textContent    = fmtSpeed(data.download_bps);
+        document.getElementById('iface-ul').textContent    = fmtSpeed(data.upload_bps);
+        document.getElementById('iface-uptime').textContent = data.uptime || '—';
+        document.getElementById('iface-rx').textContent    = fmtBytes(data.rx_byte) + ' RX';
+        document.getElementById('iface-tx').textContent    = fmtBytes(data.tx_byte) + ' TX';
+
+        updateIfaceChart();
+    } catch (e) {
+        setIfaceStatus(false);
+    }
+}
+
+// Sync with router select changes
+document.getElementById('router-select').addEventListener('change', () => {
+    ifaceDl = new Array(CHART_POINTS).fill(0);
+    ifaceUl = new Array(CHART_POINTS).fill(0);
+    updateIfaceChart();
+    fetchIfaceStats();
+});
+
+// Fetch every 5 seconds alongside main traffic
+setInterval(fetchIfaceStats, 5000);
+if (document.getElementById('router-select').value) fetchIfaceStats();
 </script>
 
 @endsection

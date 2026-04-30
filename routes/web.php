@@ -94,6 +94,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/traffic', [\App\Http\Controllers\TrafficMonitorController::class, 'index'])->name('traffic.index');
     Route::get('/traffic/{router}', [\App\Http\Controllers\TrafficMonitorController::class, 'fetchTraffic'])->name('traffic.fetch');
+    Route::get('/traffic/{router}/interface', [\App\Http\Controllers\TrafficMonitorController::class, 'fetchInterfaceStats'])->name('traffic.interface');
 
     Route::get('/reports', [\App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
 
