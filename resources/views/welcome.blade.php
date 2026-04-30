@@ -488,43 +488,33 @@
         .cta-strip .btn { background: #fff; color: var(--primary-dk); font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,.2); }
         .cta-strip .btn:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(0,0,0,.3); }
 
-        /* ─── TERMS & CONDITIONS ─── */
+        /* ─── TERMS BANNER ─── */
         #syarat { background: var(--dark-2); }
-        .tnc-header { margin-bottom: 40px; }
-        .tnc-intro {
+        .terms-banner {
+            display: grid; grid-template-columns: 1fr auto; gap: 32px; align-items: center;
             background: var(--dark-3); border: 1px solid var(--border);
-            border-radius: var(--radius); padding: 20px 24px; margin-bottom: 28px;
-            font-size: .88rem; color: var(--text-muted); line-height: 1.75;
+            border-radius: var(--radius-lg); padding: 36px 40px;
         }
-        .tnc-intro strong { color: var(--text); }
-        .accordion { display: flex; flex-direction: column; gap: 8px; }
-        .acc-item {
-            background: var(--dark-3); border: 1px solid var(--border);
-            border-radius: var(--radius); overflow: hidden;
+        .terms-banner h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; }
+        .terms-banner p { font-size: .9rem; color: var(--text-muted); line-height: 1.7; }
+        .terms-items {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 28px;
         }
-        .acc-header {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 18px 22px; cursor: pointer; user-select: none;
-            transition: background var(--transition);
+        .terms-item {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--dark-2); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 14px 16px;
+            font-size: .84rem; font-weight: 500; transition: all var(--transition);
         }
-        .acc-header:hover { background: var(--dark-4); }
-        .acc-header h4 { font-weight: 600; font-size: .92rem; }
-        .acc-header .num {
-            width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
-            background: rgba(14,165,233,.15); color: var(--primary); font-size: .78rem; font-weight: 700;
-            display: flex; align-items: center; justify-content: center; margin-right: 14px;
+        .terms-item:hover { border-color: rgba(14,165,233,.35); color: var(--primary); }
+        .terms-item i { color: var(--primary); width: 16px; flex-shrink: 0; }
+        @media (max-width: 768px) {
+            .terms-banner { grid-template-columns: 1fr; padding: 28px 24px; }
+            .terms-items { grid-template-columns: 1fr 1fr; }
         }
-        .acc-header-left { display: flex; align-items: center; }
-        .acc-arrow { color: var(--text-muted); font-size: .85rem; transition: transform var(--transition); }
-        .acc-item.open .acc-arrow { transform: rotate(180deg); }
-        .acc-body {
-            display: none; padding: 0 22px 20px; font-size: .86rem;
-            color: var(--text-muted); line-height: 1.85;
+        @media (max-width: 480px) {
+            .terms-items { grid-template-columns: 1fr; }
         }
-        .acc-item.open .acc-body { display: block; }
-        .acc-body p { margin-bottom: 10px; }
-        .acc-body ul, .acc-body ol { padding-left: 20px; display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
-        .acc-body strong { color: var(--text); }
 
         /* ─── FOOTER ─── */
         footer {
@@ -617,7 +607,7 @@
                 <li><a href="#cara-kerja">Cara Berlangganan</a></li>
                 <li><a href="#coverage">Coverage</a></li>
                 <li><a href="#kontak">Kontak</a></li>
-                <li><a href="#syarat">Syarat & Ketentuan</a></li>
+                <li><a href="{{ route('terms') }}">Syarat & Ketentuan</a></li>
             </ul>
 
             <div class="nav-actions">
@@ -638,7 +628,7 @@
                 <li><a href="#cara-kerja" class="mob-link">Cara Berlangganan</a></li>
                 <li><a href="#coverage" class="mob-link">Coverage Area</a></li>
                 <li><a href="#kontak" class="mob-link">Kontak</a></li>
-                <li><a href="#syarat" class="mob-link">Syarat & Ketentuan</a></li>
+                <li><a href="{{ route('terms') }}" class="mob-link">Syarat & Ketentuan</a></li>
             </ul>
             <div class="mob-actions">
                 <a href="https://wa.me/6282279122727" target="_blank" class="btn btn-primary" style="justify-content:center;">
@@ -1101,22 +1091,46 @@
 </div>
 
 <!-- ══════════════ SYARAT & KETENTUAN ══════════════ -->
-<section class="section" id="syarat">
+<section class="section-sm" id="syarat">
     <div class="container">
-        <div class="tnc-header">
-            <div class="badge"><i class="fas fa-file-contract"></i> Legal</div>
-            <h2 class="section-title">Syarat &amp; <span class="text-gradient">Ketentuan</span></h2>
-            <p class="section-sub">Ketentuan penggunaan layanan Tim-7 Net dan kebijakan pembayaran melalui Midtrans.</p>
+        <div class="terms-banner">
+            <div>
+                <div class="badge" style="margin-bottom:12px"><i class="fas fa-file-contract"></i> Dokumen Legal</div>
+                <h3>Syarat &amp; Ketentuan Tim-7 Net</h3>
+                <p>
+                    Dengan menggunakan layanan Tim-7 Net, Anda menyetujui seluruh ketentuan yang berlaku,
+                    termasuk kebijakan pembayaran melalui <strong style="color:var(--text)">Midtrans</strong> (izin Bank Indonesia No. 18/196/DKSP/68),
+                    kebijakan refund, dan perlindungan data pribadi sesuai UU PDP.
+                </p>
+                <div class="terms-items">
+                    <a href="{{ route('terms') }}#pasal-5" class="terms-item">
+                        <i class="fas fa-lock"></i> Sistem Pembayaran
+                    </a>
+                    <a href="{{ route('terms') }}#pasal-6" class="terms-item">
+                        <i class="fas fa-undo-alt"></i> Kebijakan Refund
+                    </a>
+                    <a href="{{ route('terms') }}#pasal-10" class="terms-item">
+                        <i class="fas fa-shield-alt"></i> Privasi Data
+                    </a>
+                    <a href="{{ route('terms') }}#pasal-4" class="terms-item">
+                        <i class="fas fa-file-invoice-dollar"></i> Biaya & Tagihan
+                    </a>
+                    <a href="{{ route('terms') }}#pasal-11" class="terms-item">
+                        <i class="fas fa-chart-line"></i> Jaminan Layanan (SLA)
+                    </a>
+                    <a href="{{ route('terms') }}#pasal-14" class="terms-item">
+                        <i class="fas fa-gavel"></i> Penyelesaian Sengketa
+                    </a>
+                </div>
+            </div>
+            <div style="flex-shrink:0">
+                <a href="{{ route('terms') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-file-alt"></i> Baca Selengkapnya
+                </a>
+            </div>
         </div>
 
-        <div class="tnc-intro">
-            <strong>Terakhir diperbarui: April 2026.</strong><br>
-            Dengan mendaftar dan menggunakan layanan Tim-7 Net, Pelanggan dianggap telah membaca, memahami, dan menyetujui seluruh Syarat &amp; Ketentuan di bawah ini. Layanan pembayaran diproses melalui <strong>Midtrans</strong> (PT Midtrans – <em>a Gojek company</em>), sebagai <em>Payment Gateway</em> berlisensi dari Bank Indonesia (izin No. 18/196/DKSP/68 tanggal 6 September 2016).
-        </div>
-
-        <div class="accordion" id="tncAccordion">
-
-            <!-- 1 -->
+        <div style="display:none" id="tncAccordion">
             <div class="acc-item open">
                 <div class="acc-header" onclick="toggleAcc(this)">
                     <div class="acc-header-left">
@@ -1445,9 +1459,9 @@
                 <h5>Bantuan</h5>
                 <ul>
                     <li><a href="#kontak">Hubungi CS</a></li>
-                    <li><a href="#syarat">Syarat &amp; Ketentuan</a></li>
-                    <li><a href="#syarat">Kebijakan Privasi</a></li>
-                    <li><a href="#syarat">Kebijakan Refund</a></li>
+                    <li><a href="{{ route('terms') }}">Syarat &amp; Ketentuan</a></li>
+                    <li><a href="{{ route('terms') }}#pasal-10">Kebijakan Privasi</a></li>
+                    <li><a href="{{ route('terms') }}#pasal-6">Kebijakan Refund</a></li>
                 </ul>
             </div>
         </div>
@@ -1459,8 +1473,8 @@
                     <i class="fas fa-lock"></i>
                     Pembayaran aman via <strong style="color:var(--text);margin-left:4px">Midtrans</strong>
                 </div>
-                <a href="#syarat">Syarat &amp; Ketentuan</a>
-                <a href="#syarat">Privasi</a>
+                <a href="{{ route('terms') }}">Syarat &amp; Ketentuan</a>
+                <a href="{{ route('terms') }}#pasal-10">Privasi</a>
             </div>
         </div>
     </div>
