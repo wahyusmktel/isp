@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Employee extends Model
 {
@@ -56,6 +57,11 @@ class Employee extends Model
             'bg-gradient-to-br from-indigo-500 to-blue-600',
         ];
         return $colors[$this->id % count($colors)];
+    }
+
+    public function payrolls(): HasMany
+    {
+        return $this->hasMany(Payroll::class);
     }
 
     public function toJsonData(): array

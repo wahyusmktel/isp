@@ -87,7 +87,7 @@ class EmployeeController extends Controller
     {
         return [
             'name'       => 'required|string|max:200',
-            'jabatan'    => 'required|string|max:100',
+            'jabatan'    => 'required|in:CEO,Direktur,Manajer,Supervisor,Admin,Keuangan,Customer Service,NOC Engineer,Teknisi,Lainnya',
             'departemen' => 'required|in:manajemen,teknis,noc,keuangan,cs,administrasi',
             'phone'      => 'nullable|string|max:20',
             'email'      => 'nullable|email|max:200' . ($id ? '|unique:employees,email,' . $id : '|unique:employees,email'),

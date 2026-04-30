@@ -239,13 +239,13 @@ $avatarColors = [
 
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1.5">Jabatan <span class="text-red-500">*</span></label>
-                        <input type="text" id="f-jabatan" list="jabatan-list" placeholder="Pilih atau ketik jabatan"
-                               class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                        <datalist id="jabatan-list">
+                        <select id="f-jabatan"
+                                class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            <option value="">-- Pilih Jabatan --</option>
                             @foreach($jabatanOptions as $j)
-                            <option value="{{ $j }}">
+                            <option value="{{ $j }}">{{ $j }}</option>
                             @endforeach
-                        </datalist>
+                        </select>
                     </div>
 
                     <div>
