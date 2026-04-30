@@ -60,12 +60,12 @@
                     <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 relative overflow-hidden">
                         <p class="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1 relative z-10">Status Koneksi</p>
                         <div class="flex items-center gap-2 relative z-10">
-                            @if($customer->status === 'Aktif')
+                            @if(strtolower($customer->status) === 'aktif')
                                 <span class="w-3 h-3 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse"></span>
-                                <span class="font-bold text-gray-900">Aktif</span>
+                                <span class="font-bold text-green-600">Aktif</span>
                             @else
                                 <span class="w-3 h-3 bg-red-500 rounded-full"></span>
-                                <span class="font-bold text-gray-900">{{ $customer->status }}</span>
+                                <span class="font-bold text-red-600">{{ ucfirst($customer->status) }}</span>
                             @endif
                         </div>
                     </div>
