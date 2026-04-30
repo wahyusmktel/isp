@@ -8,7 +8,7 @@
     <title>Tim-7 Net – Internet Fiber Optik Cepat & Stabil di Lampung</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%230ea5e9'/><text y='.9em' font-size='70' x='12' fill='white' font-family='Arial' font-weight='bold'>T7</text></svg>">
+    <link rel="icon" type="image/png" href="{{ asset('logo.png') }}">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -120,19 +120,15 @@
         .nav-inner {
             display: flex; align-items: center; justify-content: space-between; gap: 24px;
         }
-        .nav-logo {
-            display: flex; align-items: center; gap: 10px;
-            font-weight: 800; font-size: 1.35rem; flex-shrink: 0;
+        .nav-logo { display: flex; align-items: center; flex-shrink: 0; }
+        .nav-logo img {
+            height: 48px; width: auto;
+            background: #fff; border-radius: 10px;
+            padding: 5px 10px;
+            transition: opacity var(--transition);
         }
-        .nav-logo .logo-icon {
-            width: 42px; height: 42px; border-radius: 10px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-dk));
-            display: flex; align-items: center; justify-content: center;
-            font-size: .85rem; font-weight: 900; color: #fff;
-            box-shadow: 0 4px 14px rgba(14,165,233,.5);
-        }
-        .nav-logo .logo-text { color: var(--text); }
-        .nav-logo .logo-text span { color: var(--primary); }
+        .nav-logo:hover img { opacity: .88; }
+        .footer-brand .nav-logo img { height: 56px; }
         .nav-links {
             display: flex; align-items: center; gap: 6px; list-style: none;
         }
@@ -596,9 +592,8 @@
 <nav id="navbar">
     <div class="container">
         <div class="nav-inner">
-            <a href="#" class="nav-logo">
-                <div class="logo-icon">T7</div>
-                <span class="logo-text">Tim-7 <span>Net</span></span>
+            <a href="{{ url('/') }}" class="nav-logo">
+                <img src="{{ asset('logo.png') }}" alt="Tim-7 Net">
             </a>
 
             <ul class="nav-links">
@@ -1422,9 +1417,8 @@
     <div class="container">
         <div class="footer-grid">
             <div class="footer-brand">
-                <a href="#" class="nav-logo">
-                    <div class="logo-icon">T7</div>
-                    <span class="logo-text">Tim-7 <span>Net</span></span>
+                <a href="{{ url('/') }}" class="nav-logo">
+                    <img src="{{ asset('logo.png') }}" alt="Tim-7 Net">
                 </a>
                 <p>Penyedia layanan internet fiber optik berkecepatan tinggi untuk rumah dan bisnis di wilayah Lampung, Indonesia. Koneksi stabil, harga terjangkau, support terpercaya.</p>
                 <div class="social-links">

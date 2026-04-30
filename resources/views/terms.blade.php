@@ -6,7 +6,7 @@
     <meta name="description" content="Syarat dan Ketentuan layanan internet Tim-7 Net, termasuk kebijakan pembayaran melalui Midtrans, kebijakan pengembalian dana, dan perlindungan data pribadi.">
     <title>Syarat & Ketentuan – Tim-7 Net</title>
 
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%230ea5e9'/><text y='.9em' font-size='70' x='12' fill='white' font-family='Arial' font-weight='bold'>T7</text></svg>">
+    <link rel="icon" type="image/png" href="{{ asset('logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -47,9 +47,9 @@
             padding: 14px 0;
         }
         .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-        .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.2rem; }
-        .logo-icon { width: 38px; height: 38px; border-radius: 9px; background: linear-gradient(135deg, var(--primary), var(--primary-dk)); display: flex; align-items: center; justify-content: center; font-size: .8rem; font-weight: 900; color: #fff; box-shadow: 0 4px 14px rgba(14,165,233,.4); flex-shrink: 0; }
-        .logo-text span { color: var(--primary); }
+        .nav-logo { display: flex; align-items: center; }
+        .nav-logo img { height: 44px; width: auto; background: #fff; border-radius: 9px; padding: 4px 9px; transition: opacity .25s ease; }
+        .nav-logo:hover img { opacity: .88; }
         .nav-back { display: inline-flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: .85rem; font-weight: 500; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); transition: all var(--transition); }
         .nav-back:hover { color: var(--primary); border-color: var(--primary); background: rgba(14,165,233,.06); }
 
@@ -170,8 +170,7 @@
 <nav class="navbar">
     <div class="nav-inner">
         <a href="{{ url('/') }}" class="nav-logo">
-            <div class="logo-icon">T7</div>
-            <span class="logo-text">Tim-7 <span>Net</span></span>
+            <img src="{{ asset('logo.png') }}" alt="Tim-7 Net">
         </a>
         <a href="{{ url('/') }}" class="nav-back">
             <i class="fas fa-arrow-left"></i> Kembali ke Beranda
