@@ -16,6 +16,12 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login'])->name('login.post');
 });
 
+// ─── Customer Portal ─────────────────────────────────────────────────────────
+Route::get('/customer/login', [\App\Http\Controllers\CustomerAuthController::class, 'showLogin'])->name('customer.login');
+Route::post('/customer/login', [\App\Http\Controllers\CustomerAuthController::class, 'login'])->name('customer.login.post');
+Route::post('/customer/logout', [\App\Http\Controllers\CustomerAuthController::class, 'logout'])->name('customer.logout');
+Route::get('/customer/dashboard', [\App\Http\Controllers\CustomerPortalController::class, 'dashboard'])->name('customer.dashboard');
+
 // ─── Authenticated (harus login) ─────────────────────────────────────────────
 Route::middleware('auth')->group(function () {
 

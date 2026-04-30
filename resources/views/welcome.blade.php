@@ -606,8 +606,15 @@
             </ul>
 
             <div class="nav-actions">
+                @if(Route::has('login'))
+                    @auth
+                        <a href="{{ url('/dashboard') }}" class="btn btn-outline btn-sm">Dashboard</a>
+                    @else
+                        <a href="{{ route('customer.login') }}" class="btn btn-outline btn-sm" style="border-color:var(--primary); color:var(--primary);">Login Pelanggan</a>
+                    @endauth
+                @endif
                 <a href="https://wa.me/6282279122727" target="_blank" class="btn btn-primary btn-sm">
-                    <i class="fab fa-whatsapp"></i> Daftar Sekarang
+                    <i class="fab fa-whatsapp"></i> Daftar
                 </a>
                 <button class="nav-toggle" id="navToggle" aria-label="Menu">
                     <span></span><span></span><span></span>
@@ -633,7 +640,7 @@
                     @auth
                         <a href="{{ url('/dashboard') }}" class="btn btn-outline" style="justify-content:center;">Dashboard</a>
                     @else
-                        <a href="{{ route('login') }}" class="btn btn-outline" style="justify-content:center;">Login Admin</a>
+                        <a href="{{ route('customer.login') }}" class="btn btn-outline" style="justify-content:center; border-color:var(--primary); color:var(--primary);">Login Pelanggan</a>
                     @endauth
                 @endif
             </div>
