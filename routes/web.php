@@ -38,6 +38,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/customers', [\App\Http\Controllers\CustomerController::class, 'index'])->name('customers.index');
     Route::get('/customers/search', [\App\Http\Controllers\CustomerController::class, 'search'])->name('customers.search');
+    Route::get('/customers/activities', [\App\Http\Controllers\CustomerActivityController::class, 'index'])->name('customers.activities');
+    Route::get('/customers/activities/latest', [\App\Http\Controllers\CustomerActivityController::class, 'latestApi'])->name('customers.activities.latest');
+    Route::post('/customers/activities/webhook', [\App\Http\Controllers\CustomerActivityController::class, 'webhook'])->name('customers.activities.webhook')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
     Route::get('/customers/{customer}', [\App\Http\Controllers\CustomerController::class, 'show'])->name('customers.show');
     Route::get('/customers/{customer}/live-traffic', [\App\Http\Controllers\CustomerController::class, 'liveTraffic'])->name('customers.live_traffic');
     Route::post('/customers', [\App\Http\Controllers\CustomerController::class, 'store'])->name('customers.store');

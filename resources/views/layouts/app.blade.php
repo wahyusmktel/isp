@@ -106,12 +106,29 @@
             {{-- Right Actions --}}
             <div class="flex items-center gap-1.5 flex-shrink-0">
                 {{-- Notif --}}
-                <button class="w-9 h-9 rounded-xl hover:bg-gray-100 relative flex items-center justify-center transition-colors" title="Notifikasi">
-                    <svg class="w-4.5 h-4.5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>
-                    </svg>
-                    <span class="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-red-500 badge-pulse"></span>
-                </button>
+                <div class="relative" id="notif-dropdown-container">
+                    <button id="notif-btn" onclick="document.getElementById('notif-dropdown').classList.toggle('hidden')" class="w-9 h-9 rounded-xl hover:bg-gray-100 relative flex items-center justify-center transition-colors" title="Notifikasi">
+                        <svg class="w-4.5 h-4.5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>
+                        </svg>
+                        <span id="notif-badge" class="hidden absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-red-500 badge-pulse"></span>
+                    </button>
+                    
+                    {{-- Dropdown Notif --}}
+                    <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50">
+                        <div class="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-gray-900">Notifikasi Aktifitas</h3>
+                            <span id="notif-count" class="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">0</span>
+                        </div>
+                        <div id="notif-list" class="max-h-80 overflow-y-auto divide-y divide-gray-50">
+                            <!-- JS akan mengisi daftar notifikasi di sini -->
+                            <div class="px-4 py-6 text-center text-xs text-gray-500">Memuat...</div>
+                        </div>
+                        <div class="px-4 py-2 border-t border-gray-50 text-center">
+                            <a href="{{ route('customers.activities') }}" class="text-xs font-semibold text-green-600 hover:text-green-700 transition-colors">Lihat Semua Aktifitas</a>
+                        </div>
+                    </div>
+                </div>
                 {{-- Email --}}
                 <button class="w-9 h-9 rounded-xl hover:bg-gray-100 hidden sm:flex items-center justify-center transition-colors" title="Pesan">
                     <svg class="w-4.5 h-4.5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -330,6 +347,66 @@
             searchInput.focus();
         }
     });
+
+    // ─── Notification Logic ───
+    async function fetchNotifications() {
+        try {
+            const res = await fetch('/customers/activities/latest');
+            const data = await res.json();
+            
+            const badge = document.getElementById('notif-badge');
+            const list = document.getElementById('notif-list');
+            const count = document.getElementById('notif-count');
+            
+            if (data.unreadCount > 0) {
+                badge.classList.remove('hidden');
+                count.textContent = data.unreadCount + ' Baru';
+                count.classList.replace('bg-gray-100', 'bg-red-100');
+                count.classList.replace('text-gray-600', 'text-red-600');
+            } else {
+                badge.classList.add('hidden');
+                count.textContent = '0';
+                count.classList.replace('bg-red-100', 'bg-gray-100');
+                count.classList.replace('text-red-600', 'text-gray-600');
+            }
+            
+            if (data.activities.length === 0) {
+                list.innerHTML = `<div class="px-4 py-6 text-center text-xs text-gray-500">Belum ada aktifitas.</div>`;
+                return;
+            }
+            
+            list.innerHTML = '';
+            data.activities.forEach(act => {
+                const date = new Date(act.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                const isConnected = act.action.toLowerCase().includes('connect') || act.action.toLowerCase().includes('in');
+                
+                const icon = isConnected 
+                    ? `<div class="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0"><span class="w-2 h-2 rounded-full bg-green-500"></span></div>`
+                    : `<div class="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0"><span class="w-2 h-2 rounded-full bg-red-500"></span></div>`;
+                
+                const name = act.customer ? act.customer.name : act.pppoe_user;
+                const statusStr = isConnected ? 'Terhubung' : 'Terputus';
+                
+                list.innerHTML += `
+                    <div class="px-4 py-3 hover:bg-gray-50 transition-colors flex items-start gap-3">
+                        ${icon}
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm text-gray-900 font-medium truncate">${name}</p>
+                            <p class="text-xs text-gray-500 truncate">${statusStr} - ${act.ip_address || '-'}</p>
+                        </div>
+                        <span class="text-[10px] text-gray-400 font-medium whitespace-nowrap">${date}</span>
+                    </div>
+                `;
+            });
+            
+        } catch (e) {
+            console.error("Notif fetch error:", e);
+        }
+    }
+    
+    // Fetch notifications on load and every 30 seconds
+    fetchNotifications();
+    setInterval(fetchNotifications, 30000);
 </script>
 
 @stack('scripts')
