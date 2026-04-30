@@ -52,3 +52,10 @@ Route::get('/routers/{router}/live', [\App\Http\Controllers\RouterController::cl
 Route::post('/odps', [\App\Http\Controllers\OdpController::class, 'store'])->name('odps.store');
 Route::put('/odps/{odp}', [\App\Http\Controllers\OdpController::class, 'update'])->name('odps.update');
 Route::delete('/odps/{odp}', [\App\Http\Controllers\OdpController::class, 'destroy'])->name('odps.destroy');
+
+Route::get('/pppoe-mapping', [\App\Http\Controllers\PppoeMappingController::class, 'index'])->name('pppoe-mapping.index');
+Route::get('/pppoe-mapping/{router}/secrets', [\App\Http\Controllers\PppoeMappingController::class, 'fetchSecrets'])->name('pppoe-mapping.secrets');
+Route::post('/pppoe-mapping/map', [\App\Http\Controllers\PppoeMappingController::class, 'mapCustomer'])->name('pppoe-mapping.map');
+Route::delete('/pppoe-mapping/unmap/{customer}', [\App\Http\Controllers\PppoeMappingController::class, 'unmapCustomer'])->name('pppoe-mapping.unmap');
+Route::post('/pppoe-mapping/auto-map', [\App\Http\Controllers\PppoeMappingController::class, 'autoMap'])->name('pppoe-mapping.auto-map');
+

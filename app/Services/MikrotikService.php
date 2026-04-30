@@ -45,6 +45,11 @@ class MikrotikService
         return $this->parseAll($this->query('/interface/print'));
     }
 
+    public function getPppoeSecrets(): array
+    {
+        return $this->parseAll($this->query('/ppp/secret/print'));
+    }
+
     public function close(): void
     {
         if ($this->socket) {
