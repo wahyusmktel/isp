@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(php artisan *)"
+      "Bash(php artisan *)",
+      "Bash(where pdftotext *)",
+      "Bash(where mutool *)",
+      "Bash(python -c \"import pdfplumber; print\\('pdfplumber ok'\\)\")",
+      "Bash(python -c \"import PyPDF2; print\\('PyPDF2 ok'\\)\")",
+      "Bash(python -c \"import pypdf; print\\('pypdf ok'\\)\")",
+      "Bash(pdftotext \"c:/Projects/isp/midtrans-tnc-template-13-jan-2017.pdf\" -)",
+      "Bash(pdftotext -layout \"c:/Projects/isp/midtrans-tnc-template-13-jan-2017.pdf\" /tmp/tnc.txt)",
+      "Read(//tmp/**)",
+      "Bash(pdftotext -raw \"c:/Projects/isp/midtrans-tnc-template-13-jan-2017.pdf\" -)"
     ]
   }
 }
