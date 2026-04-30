@@ -92,10 +92,13 @@
         <span class="sidebar-text whitespace-nowrap">Pengaturan</span>
     </a>
 
-    <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-red-400 hover:!text-red-300" title="Keluar">
-        <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-        </svg>
-        <span class="sidebar-text whitespace-nowrap">Keluar</span>
-    </a>
+    <form method="POST" action="{{ route('logout') }}" class="mt-1">
+        @csrf
+        <button type="submit" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-red-400 hover:!text-red-300 w-full" title="Keluar">
+            <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+            <span class="sidebar-text whitespace-nowrap">Keluar</span>
+        </button>
+    </form>
 </nav>

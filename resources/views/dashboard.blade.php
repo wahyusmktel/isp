@@ -7,7 +7,7 @@
 {{-- Header --}}
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
     <div>
-        <h1 class="text-xl font-bold text-gray-900">Selamat datang, Admin 👋</h1>
+        <h1 class="text-xl font-bold text-gray-900">Selamat datang, {{ auth()->user()->name ?? 'Guest' }} 👋</h1>
         <p class="text-sm text-gray-400 mt-0.5">Ringkasan operasional ISP — {{ now()->translatedFormat('l, d F Y') }}</p>
     </div>
     <div class="flex items-center gap-2">

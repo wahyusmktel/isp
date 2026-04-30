@@ -118,9 +118,9 @@
                 {{-- Avatar --}}
                 <button class="flex items-center gap-2 hover:bg-gray-50 pl-1 pr-2.5 py-1.5 rounded-xl transition-colors">
                     <div class="w-7 h-7 rounded-full bg-gradient-to-br from-green-400 to-green-700 flex items-center justify-center flex-shrink-0">
-                        <span class="text-white text-xs font-bold">A</span>
+                        <span class="text-white text-xs font-bold">{{ strtoupper(substr(auth()->user()->name ?? 'A', 0, 1)) }}</span>
                     </div>
-                    <span class="text-sm font-medium text-gray-700 hidden md:inline">Admin</span>
+                    <span class="text-sm font-medium text-gray-700 hidden md:inline">{{ auth()->user()->name ?? 'Guest' }}</span>
                     <svg class="w-3.5 h-3.5 text-gray-400 hidden md:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
             </div>
