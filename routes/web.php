@@ -10,9 +10,7 @@ Route::get('/terms', function () {
     return view('terms');
 })->name('terms');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->name('dashboard');
+Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 
 Route::get('/settings', [\App\Http\Controllers\SettingController::class, 'index'])->name('settings');
 Route::post('/settings', [\App\Http\Controllers\SettingController::class, 'update'])->name('settings.update');
