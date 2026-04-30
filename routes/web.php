@@ -97,6 +97,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/reports', [\App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
 
+    Route::get('/employees', [\App\Http\Controllers\EmployeeController::class, 'index'])->name('employees.index');
+    Route::post('/employees', [\App\Http\Controllers\EmployeeController::class, 'store'])->name('employees.store');
+    Route::put('/employees/{employee}', [\App\Http\Controllers\EmployeeController::class, 'update'])->name('employees.update');
+    Route::delete('/employees/{employee}', [\App\Http\Controllers\EmployeeController::class, 'destroy'])->name('employees.destroy');
+
     Route::get('/financial', [\App\Http\Controllers\FinancialController::class, 'index'])->name('financial.index');
     Route::post('/financial/expenses', [\App\Http\Controllers\FinancialController::class, 'store'])->name('financial.expenses.store');
     Route::put('/financial/expenses/{expense}', [\App\Http\Controllers\FinancialController::class, 'update'])->name('financial.expenses.update');
