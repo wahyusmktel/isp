@@ -45,13 +45,17 @@
         </div>
 
         {{-- Search --}}
-        <div class="px-4 py-3" id="sidebar-search">
+        <div class="px-4 py-3 relative" id="sidebar-search">
             <div class="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2 border border-white/5">
                 <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                 </svg>
-                <input type="text" placeholder="Search..." class="bg-transparent text-sm text-gray-400 placeholder-gray-600 outline-none flex-1 w-full min-w-0">
+                <input type="text" id="live-search-input" placeholder="Search..." class="bg-transparent text-sm text-gray-400 placeholder-gray-600 outline-none flex-1 w-full min-w-0" autocomplete="off">
                 <span class="text-xs text-gray-600 bg-white/5 px-1.5 py-0.5 rounded font-mono flex-shrink-0">⌘K</span>
+            </div>
+            {{-- Dropdown Results --}}
+            <div id="live-search-results" class="hidden absolute top-full left-4 right-4 mt-1 bg-gray-800 border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden">
+                <!-- Hasil pencarian akan muncul di sini -->
             </div>
         </div>
 
@@ -268,6 +272,64 @@
     });
 
     initSidebar();
+
+    // ─── Live Search Logic ───
+    const searchInput = document.getElementById('live-search-input');
+    const searchResults = document.getElementById('live-search-results');
+    let searchTimeout = null;
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const q = this.value.trim();
+        
+        if (q.length < 2) {
+            searchResults.classList.add('hidden');
+            return;
+        }
+
+        searchTimeout = setTimeout(async () => {
+            try {
+                const res = await fetch(`/customers/search?q=${encodeURIComponent(q)}`);
+                const data = await res.json();
+                
+                searchResults.innerHTML = '';
+                
+                if (data.length === 0) {
+                    searchResults.innerHTML = `<div class="px-4 py-3 text-sm text-gray-400">Tidak ada pelanggan ditemukan.</div>`;
+                } else {
+                    data.forEach(cust => {
+                        const a = document.createElement('a');
+                        a.href = `/customers/${cust.id}`;
+                        a.className = 'block px-4 py-3 hover:bg-white/5 border-b border-white/5 last:border-0 transition-colors';
+                        a.innerHTML = `
+                            <div class="text-sm font-semibold text-white mb-0.5">${cust.name}</div>
+                            <div class="text-xs text-gray-400 font-mono">${cust.customer_number ?? '-'} • ${cust.phone ?? '-'}</div>
+                            <div class="text-xs text-gray-500">${cust.email ?? ''}</div>
+                        `;
+                        searchResults.appendChild(a);
+                    });
+                }
+                searchResults.classList.remove('hidden');
+            } catch (e) {
+                console.error("Search error:", e);
+            }
+        }, 300); // 300ms debounce
+    });
+
+    // Close search results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            searchResults.classList.add('hidden');
+        }
+    });
+
+    // Keyboard shortcut CMD+K / CTRL+K
+    document.addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+    });
 </script>
 
 @stack('scripts')

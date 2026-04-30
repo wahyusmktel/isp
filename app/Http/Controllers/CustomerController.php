@@ -36,6 +36,23 @@ class CustomerController extends Controller
         return view('customers.show', compact('customer'));
     }
 
+    public function search(Request $request): JsonResponse
+    {
+        $q = $request->query('q');
+        if (empty($q)) {
+            return response()->json([]);
+        }
+
+        $customers = Customer::where('name', 'like', "%{$q}%")
+            ->orWhere('customer_number', 'like', "%{$q}%")
+            ->orWhere('email', 'like', "%{$q}%")
+            ->orWhere('phone', 'like', "%{$q}%")
+            ->limit(5)
+            ->get(['id', 'name', 'customer_number', 'phone', 'email']);
+
+        return response()->json($customers);
+    }
+
     public function liveTraffic(Customer $customer, \App\Services\MikrotikService $mikrotik)
     {
         if (empty($customer->pppoe_user)) {
