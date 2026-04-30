@@ -37,6 +37,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/packages/generate-dummy', [\App\Http\Controllers\PackageController::class, 'generateDummy'])->name('packages.generate_dummy');
 
     Route::get('/customers', [\App\Http\Controllers\CustomerController::class, 'index'])->name('customers.index');
+    Route::get('/customers/{customer}', [\App\Http\Controllers\CustomerController::class, 'show'])->name('customers.show');
+    Route::get('/customers/{customer}/live-traffic', [\App\Http\Controllers\CustomerController::class, 'liveTraffic'])->name('customers.live_traffic');
     Route::post('/customers', [\App\Http\Controllers\CustomerController::class, 'store'])->name('customers.store');
     Route::put('/customers/{customer}', [\App\Http\Controllers\CustomerController::class, 'update'])->name('customers.update');
     Route::delete('/customers/{customer}', [\App\Http\Controllers\CustomerController::class, 'destroy'])->name('customers.destroy');

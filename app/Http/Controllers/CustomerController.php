@@ -30,6 +30,86 @@ class CustomerController extends Controller
         return view('customers.index', compact('customers', 'packages', 'stats'));
     }
 
+    public function show(Customer $customer)
+    {
+        $customer->load('package');
+        return view('customers.show', compact('customer'));
+    }
+
+    public function liveTraffic(Customer $customer, \App\Services\MikrotikService $mikrotik)
+    {
+        if (empty($customer->pppoe_user)) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Pelanggan belum dimaping PPPoE akun nya.'
+            ]);
+        }
+
+        $router = \App\Models\Router::where('status', 'online')->first();
+        if (!$router) {
+            $router = \App\Models\Router::first();
+        }
+
+        if (!$router) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Router belum dikonfigurasi.'
+            ]);
+        }
+
+        $conn = $mikrotik->connect($router->host, $router->api_port, $router->username, $router->password);
+        if (!$conn['success']) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Gagal terhubung ke Mikrotik.'
+            ]);
+        }
+
+        // Cari interface PPPoE (biasanya berawalan <pppoe-username>)
+        $interface = '<pppoe-' . $customer->pppoe_user . '>';
+        $traffic = $mikrotik->getInterfaceTraffic($interface);
+
+        // Ambil penggunaan data uptime dari interface
+        $interfaces = $mikrotik->getInterfaces();
+        $rxBytes = 0;
+        $txBytes = 0;
+        foreach ($interfaces as $iface) {
+            if (isset($iface['name']) && $iface['name'] === $interface) {
+                $rxBytes = (int)($iface['rx-byte'] ?? 0);
+                $txBytes = (int)($iface['tx-byte'] ?? 0);
+                break;
+            }
+        }
+        
+        // Konversi ke GB (Catatan: RX mikrotik = Upload pelanggan, TX mikrotik = Download pelanggan)
+        $usageData = [
+            'download_gb' => round($txBytes / 1073741824, 2),
+            'upload_gb'   => round($rxBytes / 1073741824, 2)
+        ];
+
+        $mikrotik->close();
+
+        if (empty($traffic) || !isset($traffic['rx-bits-per-second'])) {
+            return response()->json([
+                'success' => true,
+                'status'  => 'offline',
+                'rx'      => 0, // ini untuk Download di frontend
+                'tx'      => 0, // ini untuk Upload di frontend
+                'usage'   => $usageData
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'status'  => 'online',
+            // Konversi dari bps ke Mbps 
+            // Router TX -> Customer Download, Router RX -> Customer Upload
+            'rx'      => round((int)$traffic['tx-bits-per-second'] / 1000000, 2),
+            'tx'      => round((int)$traffic['rx-bits-per-second'] / 1000000, 2),
+            'usage'   => $usageData
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate($this->rules());
