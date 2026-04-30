@@ -106,6 +106,7 @@ $statusCfg = [
                 <th class="text-left text-xs font-semibold text-gray-400 py-3 pr-4">Periode</th>
                 <th class="text-left text-xs font-semibold text-gray-400 py-3 pr-4">Nominal</th>
                 <th class="text-left text-xs font-semibold text-gray-400 py-3 pr-4">Status</th>
+                <th class="text-left text-xs font-semibold text-gray-400 py-3 pr-4">Metode Bayar</th>
                 <th class="text-left text-xs font-semibold text-gray-400 py-3 pr-4">Jatuh Tempo</th>
                 <th class="text-right text-xs font-semibold text-gray-400 py-3 pr-5">Aksi</th>
             </tr>
@@ -182,6 +183,17 @@ $statusCfg = [
                     </div>
                 </td>
 
+                {{-- Metode Pembayaran --}}
+                <td class="py-3.5 pr-4">
+                    <select onchange="updatePaymentMethod({{ $inv->id }}, this.value, this)" class="bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg focus:ring-green-500 focus:border-green-500 block w-full px-2 py-1 outline-none transition-colors">
+                        <option value="" disabled {{ !$inv->payment_method ? 'selected' : '' }}>Pilih Metode</option>
+                        <option value="Tunai" {{ $inv->payment_method === 'Tunai' ? 'selected' : '' }}>Tunai</option>
+                        <option value="Transfer Bank" {{ $inv->payment_method === 'Transfer Bank' ? 'selected' : '' }}>Transfer Bank</option>
+                        <option value="QRIS" {{ $inv->payment_method === 'QRIS' ? 'selected' : '' }}>QRIS</option>
+                        <option value="E-Wallet" {{ $inv->payment_method === 'E-Wallet' ? 'selected' : '' }}>E-Wallet</option>
+                    </select>
+                </td>
+
                 {{-- Jatuh Tempo --}}
                 <td class="py-3.5 pr-4">
                     <p class="text-sm text-gray-600 whitespace-nowrap">{{ $inv->due_date?->format('d M Y') ?? '—' }}</p>
@@ -216,7 +228,7 @@ $statusCfg = [
             </tr>
             @empty
             <tr id="empty-row">
-                <td colspan="7" class="py-16 text-center">
+                <td colspan="8" class="py-16 text-center">
                     <div class="flex flex-col items-center gap-2">
                         <svg class="w-10 h-10 text-gray-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -624,6 +636,37 @@ document.addEventListener('click', e => {
         document.querySelectorAll('.dd-menu').forEach(d => d.classList.add('hidden'));
     }
 });
+
+// ─── Metode Pembayaran ───────────────────────────────────────────────────
+async function updatePaymentMethod(id, method, selectEl) {
+    selectEl.disabled = true;
+    const originalValue = selectEl.getAttribute('data-original') || selectEl.value;
+
+    try {
+        const res = await fetch(`/invoices/${id}/payment-method`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ payment_method: method })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+            showToast(data.message, 'success');
+            selectEl.setAttribute('data-original', method);
+        } else {
+            throw new Error(data.message || 'Terjadi kesalahan.');
+        }
+    } catch (err) {
+        showToast(err.message, 'error');
+        selectEl.value = originalValue; // Revert
+    } finally {
+        selectEl.disabled = false;
+    }
+}
 
 async function setStatus(id, status, btn) {
     btn.closest('.dd-menu').classList.add('hidden');

@@ -103,6 +103,19 @@ class InvoiceController extends Controller
         ]);
     }
 
+    public function updatePaymentMethod(Request $request, Invoice $invoice): JsonResponse
+    {
+        $request->validate(['payment_method' => 'nullable|string|max:50']);
+        
+        $invoice->update(['payment_method' => $request->payment_method]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Metode pembayaran tagihan \"{$invoice->invoice_number}\" berhasil diperbarui.",
+            'payment_method' => $invoice->payment_method,
+        ]);
+    }
+
     public function generateMass(Request $request): JsonResponse
     {
         $currentDate = now();

@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/invoices/{invoice}', [\App\Http\Controllers\InvoiceController::class, 'update'])->name('invoices.update');
     Route::delete('/invoices/{invoice}', [\App\Http\Controllers\InvoiceController::class, 'destroy'])->name('invoices.destroy');
     Route::patch('/invoices/{invoice}/status', [\App\Http\Controllers\InvoiceController::class, 'updateStatus'])->name('invoices.status');
+    Route::patch('/invoices/{invoice}/payment-method', [\App\Http\Controllers\InvoiceController::class, 'updatePaymentMethod'])->name('invoices.payment_method');
 
     Route::get('/network', [\App\Http\Controllers\RouterController::class, 'index'])->name('network.index');
     Route::post('/routers', [\App\Http\Controllers\RouterController::class, 'store'])->name('routers.store');
