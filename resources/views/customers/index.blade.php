@@ -867,15 +867,19 @@ const MAP_DEFAULT_LAT = -5.3747438302510755;
 const MAP_DEFAULT_LNG = 105.0802923602811;
 let custMap     = null;
 let custMarker  = null;
-let _mapPendingLat = null;
-let _mapPendingLng = null;
+// undefined = no pending; null = pending create (no coords); number = pending edit coords
+let _mapPendingLat = undefined;
+let _mapPendingLng = undefined;
 
+// Called by Google Maps API when it finishes loading
 window.initCustomerMapLib = function () {
-    if (!custMap) initCustMap();
-    if (_mapPendingLat !== null) {
-        setupMapForModal(_mapPendingLat, _mapPendingLng);
-        _mapPendingLat = null;
-        _mapPendingLng = null;
+    window._mapsApiLoaded = true;
+    // Only init if a modal open is already pending (API arrived late)
+    if (_mapPendingLat !== undefined) {
+        const lat = _mapPendingLat, lng = _mapPendingLng;
+        _mapPendingLat = undefined;
+        _mapPendingLng = undefined;
+        setTimeout(() => { initCustMap(); setupMapForModal(lat, lng); }, 100);
     }
 };
 
@@ -921,6 +925,7 @@ function setupMapForModal(lat, lng) {
     const targetLng = hasCoords ? parseFloat(lng) : MAP_DEFAULT_LNG;
     const pos = new google.maps.LatLng(targetLat, targetLng);
 
+    // Trigger resize FIRST so the map recalculates its container size
     google.maps.event.trigger(custMap, 'resize');
     custMap.setCenter(pos);
 
@@ -937,12 +942,14 @@ function setupMapForModal(lat, lng) {
 }
 
 function openMapOnModalShow(lat, lng) {
+    // Wait for modal animation to complete (250ms) so container has real dimensions
     setTimeout(() => {
-        if (typeof google !== 'undefined' && google.maps) {
-            initCustMap();
+        if (window._mapsApiLoaded) {
+            initCustMap();        // no-op if already created
             setupMapForModal(lat, lng);
         } else {
-            _mapPendingLat = lat;
+            // API hasn't loaded yet; store for when initCustomerMapLib fires
+            _mapPendingLat = lat; // null for create, number for edit
             _mapPendingLng = lng;
         }
     }, 250);
