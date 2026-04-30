@@ -14,6 +14,9 @@ Route::get('/terms', function () {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [\App\Http\Controllers\AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login'])->name('login.post');
+
+    Route::get('/register', [\App\Http\Controllers\AuthController::class, 'showRegister'])->name('register');
+    Route::post('/register', [\App\Http\Controllers\AuthController::class, 'register'])->name('register.post');
 });
 
 // ─── Customer Portal ─────────────────────────────────────────────────────────
@@ -28,6 +31,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [\App\Http\Controllers\AuthController::class, 'logout'])->name('logout');
 
     Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/users', [\App\Http\Controllers\UserController::class, 'index'])->name('users.index');
+    Route::post('/users', [\App\Http\Controllers\UserController::class, 'store'])->name('users.store');
+    Route::put('/users/{user}', [\App\Http\Controllers\UserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])->name('users.destroy');
 
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
     Route::put('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password');

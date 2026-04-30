@@ -167,11 +167,11 @@
                 </button>
             </form>
 
-            {{-- Hint --}}
-            <div class="cred-hint">
-                <p><span>admin</span>: admin@isp.local / admin123</p>
-                <p><span>operator</span>: operator@isp.local / operator123</p>
-                <p><span>pelanggan</span>: pelanggan@isp.local / pelanggan123</p>
+            <div style="margin-top: 1.5rem; text-align: center;">
+                <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.5rem;">Belum punya akun admin?</p>
+                <a href="{{ route('register') }}" class="submit-btn" style="background: transparent; border: 1px solid var(--primary); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
+                    + Registrasi Admin
+                </a>
             </div>
 
             <div class="login-footer">
