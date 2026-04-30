@@ -106,6 +106,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/payroll/salary-config/{salaryConfig}', [\App\Http\Controllers\PayrollController::class, 'destroyConfig'])->name('payroll.config.destroy');
     Route::put('/payroll/{payroll}', [\App\Http\Controllers\PayrollController::class, 'update'])->name('payroll.update');
     Route::post('/payroll/{payroll}/pay', [\App\Http\Controllers\PayrollController::class, 'pay'])->name('payroll.pay');
+    Route::get('/payroll/{payroll}/pdf', [\App\Http\Controllers\PayrollController::class, 'printPdf'])->name('payroll.pdf');
     Route::delete('/payroll/{payroll}', [\App\Http\Controllers\PayrollController::class, 'destroy'])->name('payroll.destroy');
     Route::post('/employees', [\App\Http\Controllers\EmployeeController::class, 'store'])->name('employees.store');
     Route::put('/employees/{employee}', [\App\Http\Controllers\EmployeeController::class, 'update'])->name('employees.update');

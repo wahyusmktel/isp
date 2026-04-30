@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\Expense;
 use App\Models\Payroll;
 use App\Models\SalaryConfig;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -163,6 +164,19 @@ class PayrollController extends Controller
             'success' => true,
             'message' => "Berhasil membayar {$count} slip gaji sekaligus.",
         ]);
+    }
+
+    public function printPdf(Payroll $payroll)
+    {
+        $payroll->load('employee');
+
+        $pdf = Pdf::loadView('payroll.pdf', compact('payroll'));
+        $pdf->setPaper('A4', 'portrait');
+
+        $name = $payroll->employee?->name ?? 'Pegawai';
+        $period = $payroll->period?->format('Y-m') ?? now()->format('Y-m');
+
+        return $pdf->stream("SlipGaji-{$name}-{$period}.pdf");
     }
 
     public function destroy(Payroll $payroll): JsonResponse

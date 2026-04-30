@@ -210,6 +210,13 @@ $avatarColors = [
                                     </svg>
                                 </a>
                                 @endif
+                                {{-- Cetak PDF — tampil di semua status --}}
+                                <a href="{{ route('payroll.pdf', $p->id) }}" target="_blank"
+                                   class="p-1.5 rounded-lg hover:bg-purple-50 text-purple-500 transition-colors" title="Cetak Struk Gaji">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                                    </svg>
+                                </a>
                                 <button onclick="deletePayroll({{ $p->id }}, '{{ addslashes($p->employee?->name ?? '') }}')"
                                         class="p-1.5 rounded-lg hover:bg-red-50 text-red-400 transition-colors" title="Hapus">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
