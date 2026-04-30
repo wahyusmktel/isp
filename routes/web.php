@@ -40,3 +40,15 @@ Route::post('/invoices', [\App\Http\Controllers\InvoiceController::class, 'store
 Route::put('/invoices/{invoice}', [\App\Http\Controllers\InvoiceController::class, 'update'])->name('invoices.update');
 Route::delete('/invoices/{invoice}', [\App\Http\Controllers\InvoiceController::class, 'destroy'])->name('invoices.destroy');
 Route::patch('/invoices/{invoice}/status', [\App\Http\Controllers\InvoiceController::class, 'updateStatus'])->name('invoices.status');
+
+
+Route::get('/network', [\App\Http\Controllers\RouterController::class, 'index'])->name('network.index');
+Route::post('/routers', [\App\Http\Controllers\RouterController::class, 'store'])->name('routers.store');
+Route::put('/routers/{router}', [\App\Http\Controllers\RouterController::class, 'update'])->name('routers.update');
+Route::delete('/routers/{router}', [\App\Http\Controllers\RouterController::class, 'destroy'])->name('routers.destroy');
+Route::post('/routers/{router}/test', [\App\Http\Controllers\RouterController::class, 'testConnection'])->name('routers.test');
+Route::get('/routers/{router}/live', [\App\Http\Controllers\RouterController::class, 'liveData'])->name('routers.live');
+
+Route::post('/odps', [\App\Http\Controllers\OdpController::class, 'store'])->name('odps.store');
+Route::put('/odps/{odp}', [\App\Http\Controllers\OdpController::class, 'update'])->name('odps.update');
+Route::delete('/odps/{odp}', [\App\Http\Controllers\OdpController::class, 'destroy'])->name('odps.destroy');
