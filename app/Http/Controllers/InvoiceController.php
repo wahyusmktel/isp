@@ -11,9 +11,15 @@ use Illuminate\Support\Str;
 
 class InvoiceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $period = $request->get('period', now()->format('Y-m'));
+        $year = substr($period, 0, 4);
+        $month = substr($period, 5, 2);
+
         $invoices = Invoice::with('customer:id,name,phone')
+            ->whereYear('billing_period', $year)
+            ->whereMonth('billing_period', $month)
             ->orderByDesc('created_at')
             ->get();
 
@@ -29,7 +35,7 @@ class InvoiceController extends Controller
             'overdue'   => $invoices->where('status', 'overdue')->count(),
         ];
 
-        return view('invoices.index', compact('invoices', 'customers', 'stats'));
+        return view('invoices.index', compact('invoices', 'customers', 'stats', 'period'));
     }
 
     public function store(Request $request): JsonResponse

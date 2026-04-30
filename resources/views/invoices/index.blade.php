@@ -19,7 +19,16 @@ $statusCfg = [
         <h1 class="text-xl font-bold text-gray-900">Tagihan</h1>
         <p class="text-sm text-gray-400 mt-0.5">Kelola data tagihan dan pembayaran pelanggan</p>
     </div>
-    <div class="flex items-center gap-2 self-start sm:self-auto relative z-10">
+    <div class="flex items-center gap-2 self-start sm:self-auto relative z-10 flex-wrap">
+        {{-- Filter Periode --}}
+        <form method="GET" action="{{ route('invoices.index') }}" class="flex items-center">
+            <div class="relative">
+                <input type="month" name="period" value="{{ $period }}" onchange="this.form.submit()" 
+                       class="bg-white border border-gray-200 text-gray-700 text-sm font-semibold pl-3 pr-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 cursor-pointer transition-colors shadow-sm"
+                       title="Filter Periode Tagihan">
+            </div>
+        </form>
+
         <button type="button" onclick="generateMass()" id="btn-generate-mass"
                 class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors cursor-pointer">
             <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
