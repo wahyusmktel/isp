@@ -115,14 +115,37 @@
                     </svg>
                 </button>
                 <div class="w-px h-5 bg-gray-200 mx-0.5"></div>
-                {{-- Avatar --}}
-                <button class="flex items-center gap-2 hover:bg-gray-50 pl-1 pr-2.5 py-1.5 rounded-xl transition-colors">
-                    <div class="w-7 h-7 rounded-full bg-gradient-to-br from-green-400 to-green-700 flex items-center justify-center flex-shrink-0">
-                        <span class="text-white text-xs font-bold">{{ strtoupper(substr(auth()->user()->name ?? 'A', 0, 1)) }}</span>
+                {{-- Avatar Dropdown --}}
+                <div class="relative" id="profile-dropdown-container">
+                    <button onclick="document.getElementById('profile-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 hover:bg-gray-50 pl-1 pr-2.5 py-1.5 rounded-xl transition-colors focus:outline-none">
+                        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-green-400 to-green-700 flex items-center justify-center flex-shrink-0">
+                            <span class="text-white text-xs font-bold">{{ strtoupper(substr(auth()->user()->name ?? 'A', 0, 1)) }}</span>
+                        </div>
+                        <span class="text-sm font-medium text-gray-700 hidden md:inline">{{ auth()->user()->name ?? 'Guest' }}</span>
+                        <svg class="w-3.5 h-3.5 text-gray-400 hidden md:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    
+                    {{-- Dropdown Menu --}}
+                    <div id="profile-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50">
+                        <div class="px-4 py-2 border-b border-gray-50 mb-1">
+                            <p class="text-sm font-medium text-gray-900 truncate">{{ auth()->user()->name ?? 'Guest' }}</p>
+                            <p class="text-xs text-gray-500 truncate">{{ auth()->user()->email ?? '' }}</p>
+                            <p class="text-[10px] uppercase tracking-wider text-green-600 font-semibold mt-1">{{ auth()->user()->role ?? 'User' }}</p>
+                        </div>
+                        <a href="{{ route('profile.index') ?? '#' }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            Profil & Password
+                        </a>
+                        <div class="h-px bg-gray-100 my-1"></div>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors text-left">
+                                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                                Keluar Sistem
+                            </button>
+                        </form>
                     </div>
-                    <span class="text-sm font-medium text-gray-700 hidden md:inline">{{ auth()->user()->name ?? 'Guest' }}</span>
-                    <svg class="w-3.5 h-3.5 text-gray-400 hidden md:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
+                </div>
             </div>
         </header>
 
@@ -152,6 +175,15 @@
     // State: desktop=collapsed(icon-only)|expanded; mobile=hidden|shown
     let desktopCollapsed = false;
     let mobileSidebarOpen = false;
+
+    // Handle profile dropdown click outside
+    document.addEventListener('click', function(event) {
+        const container = document.getElementById('profile-dropdown-container');
+        const dropdown = document.getElementById('profile-dropdown');
+        if (container && dropdown && !container.contains(event.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
 
     function toggleSidebar() {
         if (isDesktop()) {

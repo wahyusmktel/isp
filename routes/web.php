@@ -23,6 +23,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 
+    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
+    Route::put('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password');
+
     Route::get('/settings', [\App\Http\Controllers\SettingController::class, 'index'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\SettingController::class, 'update'])->name('settings.update');
 

@@ -18,7 +18,10 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
         </svg>
         <span class="sidebar-text whitespace-nowrap">Pelanggan</span>
-        <span class="sidebar-badge ml-auto bg-green-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">248</span>
+        @php $custCount = \App\Models\Customer::count(); @endphp
+        @if($custCount > 0)
+        <span class="sidebar-badge ml-auto bg-green-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ $custCount }}</span>
+        @endif
     </a>
 
     <a href="{{ route('packages.index') }}" class="sidebar-link {{ request()->routeIs('packages.*') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Paket Internet">
@@ -33,7 +36,10 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
         <span class="sidebar-text whitespace-nowrap">Tagihan</span>
-        <span class="sidebar-badge ml-auto text-[10px] text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded font-semibold">12</span>
+        @php $invCount = \App\Models\Invoice::whereIn('status', ['unpaid', 'overdue'])->count(); @endphp
+        @if($invCount > 0)
+        <span class="sidebar-badge ml-auto text-[10px] text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded font-semibold">{{ $invCount }}</span>
+        @endif
     </a>
 
     <p class="sidebar-label text-[10px] font-semibold uppercase tracking-widest text-gray-600 px-3 pt-4 pb-1">Jaringan</p>
