@@ -11,10 +11,12 @@
         <p class="text-sm text-gray-400 mt-0.5">Ringkasan operasional ISP — {{ now()->translatedFormat('l, d F Y') }}</p>
     </div>
     <div class="flex items-center gap-2">
+        @if(auth()->user()->role === 'admin')
         <a href="{{ route('customers.index') }}" class="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white text-sm font-medium px-3 py-2 rounded-xl transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             Tambah Pelanggan
         </a>
+        @endif
     </div>
 </div>
 

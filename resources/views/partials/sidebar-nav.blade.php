@@ -31,12 +31,14 @@
         <span class="sidebar-text whitespace-nowrap">Aktifitas Pelanggan</span>
     </a>
 
+    @if(auth()->user()->role === 'admin')
     <a href="{{ route('packages.index') }}" class="sidebar-link {{ request()->routeIs('packages.*') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Paket Internet">
         <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
         </svg>
         <span class="sidebar-text whitespace-nowrap">Paket Internet</span>
     </a>
+    @endif
 
     <a href="{{ route('invoices.index') }}" class="sidebar-link {{ request()->routeIs('invoices.*') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Tagihan">
         <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
@@ -51,6 +53,7 @@
 
     <p class="sidebar-label text-[10px] font-semibold uppercase tracking-widest text-gray-600 px-3 pt-4 pb-1">Jaringan</p>
 
+    @if(auth()->user()->role === 'admin')
     <a href="{{ route('network.index') }}" class="sidebar-link {{ request()->routeIs('network.*') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Router & ODP">
         <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
             <rect x="2" y="6" width="20" height="8" rx="2"/>
@@ -65,6 +68,7 @@
         </svg>
         <span class="sidebar-text whitespace-nowrap">PPPoE Mapping</span>
     </a>
+    @endif
 
     <a href="{{ route('monitoring.index') }}" class="sidebar-link {{ request()->routeIs('monitoring.*') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Monitoring">
         <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
@@ -81,6 +85,7 @@
         <span class="sidebar-text whitespace-nowrap">Monitoring Trafik</span>
     </a>
 
+    @if(auth()->user()->role === 'admin')
     <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Tiket Gangguan">
         <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/>
@@ -88,6 +93,7 @@
         <span class="sidebar-text whitespace-nowrap">Tiket Gangguan</span>
         <span class="sidebar-badge ml-auto text-[10px] text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded font-semibold">5</span>
     </a>
+    @endif
 
     <p class="sidebar-label text-[10px] font-semibold uppercase tracking-widest text-gray-600 px-3 pt-4 pb-1">Umum</p>
 
@@ -98,12 +104,14 @@
         <span class="sidebar-text whitespace-nowrap">Laporan</span>
     </a>
 
+    @if(auth()->user()->role === 'admin')
     <a href="{{ route('settings') }}" class="sidebar-link {{ request()->routeIs('settings') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Pengaturan">
         <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/>
         </svg>
         <span class="sidebar-text whitespace-nowrap">Pengaturan</span>
     </a>
+    @endif
 
     <form method="POST" action="{{ route('logout') }}" class="mt-1">
         @csrf

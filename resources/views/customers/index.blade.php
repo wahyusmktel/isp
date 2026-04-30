@@ -30,6 +30,7 @@ $statusCfg = [
         <p class="text-sm text-gray-400 mt-0.5">Kelola data pelanggan aktif dan riwayat layanan</p>
     </div>
     <div class="flex items-center gap-2 self-start sm:self-auto">
+        @if(auth()->user()->role === 'admin')
         <button onclick="openDummyModal()"
                 class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -44,6 +45,7 @@ $statusCfg = [
             </svg>
             Tambah Pelanggan
         </button>
+        @endif
     </div>
 
 </div>
@@ -179,16 +181,19 @@ $statusCfg = [
 
                 {{-- Status dropdown --}}
                 <td class="py-3.5 pr-4" data-status-cell>
-                    <div class="relative" data-status-dd>
-                        <button onclick="toggleStatusDd(this)" data-id="{{ $cust->id }}"
-                                class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors cursor-pointer select-none
-                                       {{ $sCfg['badge'] }} hover:opacity-80">
+                    <div class="relative" @if(auth()->user()->role === 'admin') data-status-dd @endif>
+                        <button @if(auth()->user()->role === 'admin') onclick="toggleStatusDd(this)" @else disabled @endif data-id="{{ $cust->id }}"
+                                class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors {{ auth()->user()->role === 'admin' ? 'cursor-pointer hover:opacity-80' : 'cursor-default' }} select-none
+                                       {{ $sCfg['badge'] }}">
                             <span class="w-1.5 h-1.5 rounded-full {{ $sCfg['dot'] }}"></span>
                             {{ $sCfg['label'] }}
+                            @if(auth()->user()->role === 'admin')
                             <svg class="w-2.5 h-2.5 opacity-50" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                             </svg>
+                            @endif
                         </button>
+                        @if(auth()->user()->role === 'admin')
                         <div class="dd-menu hidden absolute top-full left-0 z-30 mt-1 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden min-w-[130px] py-1">
                             <button onclick="setStatus({{ $cust->id }}, 'aktif', this)"
                                     class="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left hover:bg-gray-50 transition-colors {{ $cust->status==='aktif' ? 'font-semibold text-gray-900' : 'text-gray-600' }}">
@@ -206,6 +211,7 @@ $statusCfg = [
                                 @if($cust->status==='terminate')<svg class="w-3 h-3 ml-auto text-green-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>@endif
                             </button>
                         </div>
+                        @endif
                     </div>
                 </td>
 
@@ -225,6 +231,7 @@ $statusCfg = [
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
                         </a>
+                        @if(auth()->user()->role === 'admin')
                         <button onclick="openModal('edit', getCust({{ $cust->id }}))"
                                 class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-500 flex items-center justify-center transition-colors"
                                 title="Edit Pelanggan">
@@ -239,6 +246,7 @@ $statusCfg = [
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                             </svg>
                         </button>
+                        @endif
                     </div>
                 </td>
             </tr>

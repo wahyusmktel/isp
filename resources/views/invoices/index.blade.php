@@ -29,6 +29,7 @@ $statusCfg = [
             </div>
         </form>
 
+        @if(auth()->user()->role === 'admin')
         <button type="button" onclick="generateMass()" id="btn-generate-mass"
                 class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors cursor-pointer">
             <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -43,6 +44,7 @@ $statusCfg = [
             </svg>
             Buat Tagihan
         </button>
+        @endif
     </div>
 </div>
 
@@ -219,6 +221,7 @@ $statusCfg = [
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
                             </svg>
                         </a>
+                        @if(auth()->user()->role === 'admin')
                         <button onclick="openModal('edit', getInv({{ $inv->id }}))"
                                 class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-500 flex items-center justify-center transition-colors"
                                 title="Edit Tagihan">
@@ -233,6 +236,7 @@ $statusCfg = [
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                             </svg>
                         </button>
+                        @endif
                     </div>
                 </td>
             </tr>
