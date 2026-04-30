@@ -329,7 +329,7 @@ $statusCfg = [
                                 <p class="err hidden text-xs text-red-500 mt-1" id="err-name"></p>
                             </div>
                             <div>
-                                <label class="lbl">No. Telepon / WhatsApp <span class="text-red-500">*</span></label>
+                                <label class="lbl">No. Telepon / WhatsApp</label>
                                 <input type="text" id="f-phone" name="phone" placeholder="cth. 0812-3456-7890"
                                        class="inp w-full">
                                 <p class="err hidden text-xs text-red-500 mt-1" id="err-phone"></p>
@@ -341,11 +341,47 @@ $statusCfg = [
                                 <p class="err hidden text-xs text-red-500 mt-1" id="err-email"></p>
                             </div>
                             <div class="sm:col-span-2">
-                                <label class="lbl">Alamat Instalasi <span class="text-red-500">*</span></label>
+                                <label class="lbl">Alamat Instalasi</label>
                                 <textarea id="f-address" name="address" rows="2"
                                           placeholder="Alamat lengkap lokasi pemasangan"
                                           class="inp w-full resize-none"></textarea>
                                 <p class="err hidden text-xs text-red-500 mt-1" id="err-address"></p>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="lbl">
+                                    Titik Lokasi <span class="text-gray-400 font-normal">(Google Maps — opsional)</span>
+                                </label>
+                                <div id="customer-map" style="height:260px;"
+                                     class="w-full rounded-xl border border-gray-200 overflow-hidden bg-gray-100 flex items-center justify-center">
+                                    <p class="text-xs text-gray-400" id="map-loading-msg">Memuat peta…</p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 mt-2">
+                                    <div>
+                                        <label class="lbl">Latitude</label>
+                                        <input type="text" id="f-lat" name="latitude" readonly
+                                               placeholder="Klik peta untuk menetapkan"
+                                               class="inp w-full text-xs font-mono bg-gray-50 cursor-default">
+                                    </div>
+                                    <div>
+                                        <label class="lbl">Longitude</label>
+                                        <input type="text" id="f-lng" name="longitude" readonly
+                                               placeholder="Klik peta untuk menetapkan"
+                                               class="inp w-full text-xs font-mono bg-gray-50 cursor-default">
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between mt-1.5">
+                                    <p class="text-[10px] text-gray-400">Klik atau seret pin untuk mengatur titik lokasi</p>
+                                    <div class="flex gap-3">
+                                        <button type="button" onclick="clearMapLocation()"
+                                                class="text-[10px] text-gray-400 hover:text-red-500 font-medium transition-colors">
+                                            Hapus Koordinat
+                                        </button>
+                                        <button type="button" onclick="resetMapLocation()"
+                                                class="text-[10px] text-blue-500 hover:text-blue-700 font-medium transition-colors">
+                                            Reset ke Default
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -826,6 +862,107 @@ async function submitDummy(e) {
     }
 }
 
+// ─── Google Maps ─────────────────────────────────────────────────────────────
+const MAP_DEFAULT_LAT = -5.3747438302510755;
+const MAP_DEFAULT_LNG = 105.0802923602811;
+let custMap     = null;
+let custMarker  = null;
+let _mapPendingLat = null;
+let _mapPendingLng = null;
+
+window.initCustomerMapLib = function () {
+    if (!custMap) initCustMap();
+    if (_mapPendingLat !== null) {
+        setupMapForModal(_mapPendingLat, _mapPendingLng);
+        _mapPendingLat = null;
+        _mapPendingLng = null;
+    }
+};
+
+function initCustMap() {
+    if (custMap || typeof google === 'undefined' || !google.maps) return;
+    const loadingMsg = document.getElementById('map-loading-msg');
+    if (loadingMsg) loadingMsg.remove();
+
+    custMap = new google.maps.Map(document.getElementById('customer-map'), {
+        center: { lat: MAP_DEFAULT_LAT, lng: MAP_DEFAULT_LNG },
+        zoom: 15,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+        gestureHandling: 'cooperative',
+    });
+
+    custMarker = new google.maps.Marker({
+        map: null,
+        draggable: true,
+        title: 'Lokasi Pelanggan',
+    });
+
+    custMarker.addListener('dragend', syncCoordsFromMarker);
+    custMap.addListener('click', function (e) {
+        custMarker.setPosition(e.latLng);
+        custMarker.setMap(custMap);
+        syncCoordsFromMarker();
+    });
+}
+
+function syncCoordsFromMarker() {
+    const pos = custMarker.getPosition();
+    if (!pos) return;
+    document.getElementById('f-lat').value = pos.lat().toFixed(7);
+    document.getElementById('f-lng').value = pos.lng().toFixed(7);
+}
+
+function setupMapForModal(lat, lng) {
+    if (!custMap) return;
+    const hasCoords = lat != null && lng != null;
+    const targetLat = hasCoords ? parseFloat(lat) : MAP_DEFAULT_LAT;
+    const targetLng = hasCoords ? parseFloat(lng) : MAP_DEFAULT_LNG;
+    const pos = new google.maps.LatLng(targetLat, targetLng);
+
+    google.maps.event.trigger(custMap, 'resize');
+    custMap.setCenter(pos);
+
+    if (hasCoords) {
+        custMarker.setPosition(pos);
+        custMarker.setMap(custMap);
+        document.getElementById('f-lat').value = parseFloat(lat).toFixed(7);
+        document.getElementById('f-lng').value = parseFloat(lng).toFixed(7);
+    } else {
+        custMarker.setMap(null);
+        document.getElementById('f-lat').value = '';
+        document.getElementById('f-lng').value = '';
+    }
+}
+
+function openMapOnModalShow(lat, lng) {
+    setTimeout(() => {
+        if (typeof google !== 'undefined' && google.maps) {
+            initCustMap();
+            setupMapForModal(lat, lng);
+        } else {
+            _mapPendingLat = lat;
+            _mapPendingLng = lng;
+        }
+    }, 250);
+}
+
+function resetMapLocation() {
+    if (!custMap || !custMarker) return;
+    const pos = new google.maps.LatLng(MAP_DEFAULT_LAT, MAP_DEFAULT_LNG);
+    custMap.setCenter(pos);
+    custMarker.setPosition(pos);
+    custMarker.setMap(custMap);
+    syncCoordsFromMarker();
+}
+
+function clearMapLocation() {
+    if (custMarker) custMarker.setMap(null);
+    document.getElementById('f-lat').value = '';
+    document.getElementById('f-lng').value = '';
+}
+
 // ─── Modal open / close ───────────────────────────────────────────────────────
 
 function openModal(mode, cust = null) {
@@ -847,7 +984,7 @@ function openModal(mode, cust = null) {
         document.getElementById('f-name').value   = cust.name;
         document.getElementById('f-phone').value  = cust.phone;
         document.getElementById('f-email').value  = cust.email || '';
-        document.getElementById('f-address').value = cust.address;
+        document.getElementById('f-address').value = cust.address || '';
         document.getElementById('f-package').value = cust.package_id || '';
         document.getElementById('f-status').value  = cust.status;
         document.getElementById('f-join').value    = cust.join_date || '';
@@ -856,14 +993,16 @@ function openModal(mode, cust = null) {
         document.getElementById('f-onu').value     = cust.onu_id || '';
         document.getElementById('f-notes').value   = cust.notes || '';
         document.getElementById('f-billing-date').value = cust.billing_date || 1;
-        
+        document.getElementById('f-lat').value     = cust.latitude != null ? cust.latitude : '';
+        document.getElementById('f-lng').value     = cust.longitude != null ? cust.longitude : '';
+
         document.getElementById('wrap-customer-number').classList.remove('hidden');
         document.getElementById('f-customer-number').value = cust.customer_number || '';
     } else {
         document.getElementById('modal-title').textContent    = 'Tambah Pelanggan';
         document.getElementById('modal-subtitle').textContent = 'Isi informasi lengkap pelanggan baru';
         document.getElementById('modal-save-text').textContent = 'Simpan';
-        
+
         document.getElementById('wrap-customer-number').classList.add('hidden');
         document.getElementById('f-customer-number').value = '';
     }
@@ -874,6 +1013,10 @@ function openModal(mode, cust = null) {
         card.classList.remove('scale-95','opacity-0');
         card.classList.add('scale-100','opacity-100');
     }));
+
+    const mapLat = (mode === 'edit' && cust && cust.latitude != null) ? cust.latitude : null;
+    const mapLng = (mode === 'edit' && cust && cust.longitude != null) ? cust.longitude : null;
+    openMapOnModalShow(mapLat, mapLng);
 }
 
 function closeModal() {
@@ -1089,3 +1232,11 @@ document.addEventListener('keydown', e => {
 });
 </script>
 @endpush
+
+@if(env('GOOGLE_MAPS_API_KEY'))
+@push('scripts')
+<script async defer
+    src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&callback=initCustomerMapLib">
+</script>
+@endpush
+@endif

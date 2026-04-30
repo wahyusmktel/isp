@@ -11,11 +11,14 @@ class Customer extends Model
         'customer_number', 'name', 'email', 'phone', 'address',
         'package_id', 'ip_address', 'pppoe_user', 'onu_id',
         'status', 'join_date', 'billing_date', 'notes',
+        'latitude', 'longitude',
     ];
 
     protected $casts = [
         'join_date'    => 'date',
         'billing_date' => 'integer',
+        'latitude'     => 'float',
+        'longitude'    => 'float',
     ];
 
     public function package(): BelongsTo
@@ -52,6 +55,8 @@ class Customer extends Model
             'join_date_fmt'=> $this->join_date?->format('d M Y') ?? '—',
             'billing_date' => $this->billing_date ?? 1,
             'notes'        => $this->notes ?? '',
+            'latitude'     => $this->latitude,
+            'longitude'    => $this->longitude,
         ];
     }
 }

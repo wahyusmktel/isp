@@ -227,8 +227,8 @@ class CustomerController extends Controller
         return [
             'name'       => 'required|string|max:150',
             'email'      => 'nullable|email|max:150',
-            'phone'      => 'required|string|max:20',
-            'address'    => 'required|string',
+            'phone'      => 'nullable|string|max:20',
+            'address'    => 'nullable|string',
             'package_id' => 'required|exists:packages,id',
             'ip_address' => 'nullable|string|max:45',
             'pppoe_user' => 'nullable|string|max:100',
@@ -237,6 +237,8 @@ class CustomerController extends Controller
             'join_date'    => 'required|date',
             'billing_date' => 'nullable|integer|min:1|max:31',
             'notes'        => 'nullable|string|max:1000',
+            'latitude'     => 'nullable|numeric|between:-90,90',
+            'longitude'    => 'nullable|numeric|between:-180,180',
         ];
     }
 }
