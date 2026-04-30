@@ -33,6 +33,7 @@ class CustomerController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate($this->rules());
+        $validated['customer_number'] = str_pad(rand(1, 99999), 5, '0', STR_PAD_LEFT);
         $customer  = Customer::create($validated);
         $customer->load('package:id,name,category');
 
@@ -110,6 +111,7 @@ class CustomerController extends Controller
                 'status'     => 'aktif',
                 'join_date'  => now()->subDays(rand(0, 30))->format('Y-m-d'),
                 'billing_date' => rand(1, 28),
+                'customer_number' => str_pad(rand(1, 99999), 5, '0', STR_PAD_LEFT),
             ]);
             $customer->load('package:id,name,category');
             $generated[] = $customer->toJsonData();

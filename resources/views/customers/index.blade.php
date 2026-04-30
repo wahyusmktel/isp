@@ -301,6 +301,11 @@ $statusCfg = [
                     <div>
                         <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Identitas</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="sm:col-span-2 hidden" id="wrap-customer-number">
+                                <label class="lbl">Nomor Pelanggan</label>
+                                <input type="text" id="f-customer-number" readonly disabled
+                                       class="inp w-full bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed">
+                            </div>
                             <div class="sm:col-span-2">
                                 <label class="lbl">Nama Lengkap <span class="text-red-500">*</span></label>
                                 <input type="text" id="f-name" name="name" placeholder="cth. Budi Santoso"
@@ -835,10 +840,16 @@ function openModal(mode, cust = null) {
         document.getElementById('f-onu').value     = cust.onu_id || '';
         document.getElementById('f-notes').value   = cust.notes || '';
         document.getElementById('f-billing-date').value = cust.billing_date || 1;
+        
+        document.getElementById('wrap-customer-number').classList.remove('hidden');
+        document.getElementById('f-customer-number').value = cust.customer_number || '';
     } else {
         document.getElementById('modal-title').textContent    = 'Tambah Pelanggan';
         document.getElementById('modal-subtitle').textContent = 'Isi informasi lengkap pelanggan baru';
         document.getElementById('modal-save-text').textContent = 'Simpan';
+        
+        document.getElementById('wrap-customer-number').classList.add('hidden');
+        document.getElementById('f-customer-number').value = '';
     }
 
     modal.classList.remove('hidden');

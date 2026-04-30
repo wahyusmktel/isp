@@ -430,6 +430,7 @@
                     <div class="info-card">
                         <div class="info-name">{{ $invoice->customer->name }}</div>
                         <div class="info-detail">
+                            ID Pelanggan: <strong>{{ $invoice->customer->customer_number ?? '-' }}</strong><br>
                             {{ $invoice->customer->address ?? 'Alamat tidak tersedia' }}<br>
                             Telp/WA: <strong>{{ $invoice->customer->phone }}</strong>
                             @if($invoice->customer->email)

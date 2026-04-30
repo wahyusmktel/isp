@@ -129,6 +129,7 @@ $statusCfg = [
                 data-id="{{ $inv->id }}"
                 data-number="{{ strtolower($inv->invoice_number) }}"
                 data-customer="{{ strtolower($inv->customer?->name ?? '') }}"
+                data-customer-num="{{ strtolower($inv->customer?->customer_number ?? '') }}"
                 data-status="{{ $inv->status }}"
                 class="hover:bg-gray-50/50 transition-colors group">
 
@@ -141,7 +142,7 @@ $statusCfg = [
                 <td class="py-3.5 pr-4">
                     <div class="min-w-0">
                         <p class="text-sm font-semibold text-gray-900 whitespace-nowrap">{{ $inv->customer?->name ?? '—' }}</p>
-                        <p class="text-xs text-gray-400 truncate max-w-[160px]">{{ $inv->customer?->phone ?? '—' }}</p>
+                        <p class="text-xs text-gray-400 truncate max-w-[160px]">{{ $inv->customer?->customer_number ?? '—' }}</p>
                     </div>
                 </td>
 
@@ -605,7 +606,7 @@ function applyFilters() {
     let visible  = 0;
 
     document.querySelectorAll('[data-inv-row]').forEach(row => {
-        const matchSearch  = !q || row.dataset.number.includes(q) || row.dataset.customer.includes(q);
+        const matchSearch  = !q || row.dataset.number.includes(q) || row.dataset.customer.includes(q) || (row.dataset.customerNum && row.dataset.customerNum.includes(q));
         const matchStatus  = activeFilter === 'all' || row.dataset.status === activeFilter;
         const show         = matchSearch && matchStatus;
         row.style.display  = show ? '' : 'none';

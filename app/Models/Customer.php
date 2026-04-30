@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Customer extends Model
 {
     protected $fillable = [
-        'name', 'email', 'phone', 'address',
+        'customer_number', 'name', 'email', 'phone', 'address',
         'package_id', 'ip_address', 'pppoe_user', 'onu_id',
         'status', 'join_date', 'billing_date', 'notes',
     ];
@@ -35,9 +35,10 @@ class Customer extends Model
     public function toJsonData(): array
     {
         return [
-            'id'           => $this->id,
-            'name'         => $this->name,
-            'email'        => $this->email ?? '',
+            'id'              => $this->id,
+            'customer_number' => $this->customer_number ?? '',
+            'name'            => $this->name,
+            'email'           => $this->email ?? '',
             'phone'        => $this->phone,
             'address'      => $this->address,
             'package_id'   => $this->package_id,
