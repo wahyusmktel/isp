@@ -348,13 +348,57 @@ $statusCfg = [
                                 <p class="err hidden text-xs text-red-500 mt-1" id="err-address"></p>
                             </div>
                             <div class="sm:col-span-2">
-                                <label class="lbl">
-                                    Titik Lokasi <span class="text-gray-400 font-normal">(Google Maps — opsional)</span>
-                                </label>
-                                <div id="customer-map" style="height:260px;"
+                                {{-- Header + Tab Switcher --}}
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="lbl mb-0">
+                                        Titik Lokasi
+                                        <span class="text-gray-400 font-normal">(opsional)</span>
+                                    </label>
+                                    <div class="flex items-center gap-0.5 bg-gray-100 p-0.5 rounded-xl">
+                                        <button type="button" id="mtab-map" onclick="switchMapView('map')"
+                                                class="mtab-btn flex items-center gap-1 px-2.5 py-1 rounded-[10px] text-[11px] font-semibold transition-all bg-white text-gray-800 shadow-sm">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                                            </svg>
+                                            Peta
+                                        </button>
+                                        <button type="button" id="mtab-satellite" onclick="switchMapView('satellite')"
+                                                class="mtab-btn flex items-center gap-1 px-2.5 py-1 rounded-[10px] text-[11px] font-semibold transition-all text-gray-500 hover:text-gray-700">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <circle cx="12" cy="12" r="3"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.188 10.934a8 8 0 01.005 2.132M3.807 13.066a8 8 0 01-.005-2.132M10.934 3.812a8 8 0 012.132-.005M13.066 20.193a8 8 0 01-2.132.005M5.636 5.636l1.414 1.414M16.95 16.95l1.414 1.414M5.636 18.364l1.414-1.414M16.95 7.05l1.414-1.414"/>
+                                            </svg>
+                                            Satelit
+                                        </button>
+                                        <button type="button" id="mtab-street" onclick="switchMapView('street')"
+                                                class="mtab-btn flex items-center gap-1 px-2.5 py-1 rounded-[10px] text-[11px] font-semibold transition-all text-gray-500 hover:text-gray-700">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <circle cx="12" cy="7" r="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 9c-2 0-4 1-4 3v1h8v-1c0-2-2-3-4-3zm-7 9l2-4m14 4l-2-4M5 21l7-7 7 7"/>
+                                            </svg>
+                                            Street View
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {{-- Map --}}
+                                <div id="customer-map" style="height:280px;"
                                      class="w-full rounded-xl border border-gray-200 overflow-hidden bg-gray-100 flex items-center justify-center">
                                     <p class="text-xs text-gray-400" id="map-loading-msg">Memuat peta…</p>
                                 </div>
+
+                                {{-- Street View --}}
+                                <div id="customer-streetview" style="height:280px; display:none;"
+                                     class="w-full rounded-xl border border-gray-200 overflow-hidden bg-gray-100 relative">
+                                    <div id="sv-no-coverage" style="display:none;"
+                                         class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gray-100 z-10">
+                                        <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                            <circle cx="12" cy="7" r="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 9c-2 0-4 1-4 3v1h8v-1c0-2-2-3-4-3zm-7 9l2-4m14 4l-2-4M5 21l7-7 7 7"/>
+                                        </svg>
+                                        <p class="text-xs font-medium text-gray-400">Street View tidak tersedia di lokasi ini</p>
+                                        <p class="text-[10px] text-gray-300">Coba geser pin ke lokasi lain</p>
+                                    </div>
+                                </div>
+
+                                {{-- Coordinates --}}
                                 <div class="grid grid-cols-2 gap-2 mt-2">
                                     <div>
                                         <label class="lbl">Latitude</label>
@@ -865,20 +909,19 @@ async function submitDummy(e) {
 // ─── Google Maps ─────────────────────────────────────────────────────────────
 const MAP_DEFAULT_LAT = -5.3747438302510755;
 const MAP_DEFAULT_LNG = 105.0802923602811;
-let custMap     = null;
-let custMarker  = null;
-// undefined = no pending; null = pending create (no coords); number = pending edit coords
+let custMap        = null;
+let custMarker     = null;
+let custStreetView = null;
+let currentMapView = 'map';
+// undefined = no pending; null = create mode; number = edit mode coords
 let _mapPendingLat = undefined;
 let _mapPendingLng = undefined;
 
-// Called by Google Maps API when it finishes loading
 window.initCustomerMapLib = function () {
     window._mapsApiLoaded = true;
-    // Only init if a modal open is already pending (API arrived late)
     if (_mapPendingLat !== undefined) {
         const lat = _mapPendingLat, lng = _mapPendingLng;
-        _mapPendingLat = undefined;
-        _mapPendingLng = undefined;
+        _mapPendingLat = undefined; _mapPendingLng = undefined;
         setTimeout(() => { initCustMap(); setupMapForModal(lat, lng); }, 100);
     }
 };
@@ -891,9 +934,11 @@ function initCustMap() {
     custMap = new google.maps.Map(document.getElementById('customer-map'), {
         center: { lat: MAP_DEFAULT_LAT, lng: MAP_DEFAULT_LNG },
         zoom: 15,
+        mapTypeId: 'roadmap',
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
+        zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_BOTTOM },
         gestureHandling: 'cooperative',
     });
 
@@ -901,13 +946,18 @@ function initCustMap() {
         map: null,
         draggable: true,
         title: 'Lokasi Pelanggan',
+        animation: google.maps.Animation.DROP,
     });
 
-    custMarker.addListener('dragend', syncCoordsFromMarker);
+    custMarker.addListener('dragend', () => {
+        syncCoordsFromMarker();
+        if (custStreetView) custStreetView.setPosition(custMarker.getPosition());
+    });
     custMap.addListener('click', function (e) {
         custMarker.setPosition(e.latLng);
         custMarker.setMap(custMap);
         syncCoordsFromMarker();
+        if (custStreetView) custStreetView.setPosition(e.latLng);
     });
 }
 
@@ -925,7 +975,7 @@ function setupMapForModal(lat, lng) {
     const targetLng = hasCoords ? parseFloat(lng) : MAP_DEFAULT_LNG;
     const pos = new google.maps.LatLng(targetLat, targetLng);
 
-    // Trigger resize FIRST so the map recalculates its container size
+    custMap.setMapTypeId('roadmap');
     google.maps.event.trigger(custMap, 'resize');
     custMap.setCenter(pos);
 
@@ -941,15 +991,92 @@ function setupMapForModal(lat, lng) {
     }
 }
 
+// ─── Map View Tabs ────────────────────────────────────────────────────────────
+function switchMapView(view) {
+    currentMapView = view;
+    document.querySelectorAll('.mtab-btn').forEach(b => {
+        b.classList.remove('bg-white', 'text-gray-800', 'shadow-sm');
+        b.classList.add('text-gray-500');
+    });
+    const active = document.getElementById('mtab-' + view);
+    if (active) { active.classList.add('bg-white', 'text-gray-800', 'shadow-sm'); active.classList.remove('text-gray-500'); }
+
+    const mapEl = document.getElementById('customer-map');
+    const svEl  = document.getElementById('customer-streetview');
+
+    if (view === 'street') {
+        mapEl.style.display = 'none';
+        svEl.style.display  = '';
+        openStreetView();
+    } else {
+        mapEl.style.display = '';
+        svEl.style.display  = 'none';
+        if (custMap) {
+            custMap.setMapTypeId(view === 'satellite' ? 'hybrid' : 'roadmap');
+            google.maps.event.trigger(custMap, 'resize');
+            const c = (custMarker && custMarker.getMap()) ? custMarker.getPosition()
+                      : new google.maps.LatLng(MAP_DEFAULT_LAT, MAP_DEFAULT_LNG);
+            custMap.setCenter(c);
+        }
+    }
+}
+
+function openStreetView() {
+    if (!custMap || typeof google === 'undefined') return;
+    const pos = (custMarker && custMarker.getMap()) ? custMarker.getPosition() : custMap.getCenter();
+
+    // Check coverage first
+    const svc = new google.maps.StreetViewService();
+    svc.getPanorama({ location: pos, radius: 100 }, function (data, status) {
+        const noEl = document.getElementById('sv-no-coverage');
+        if (status !== google.maps.StreetViewStatus.OK) {
+            if (noEl) noEl.style.display = '';
+            return;
+        }
+        if (noEl) noEl.style.display = 'none';
+
+        if (!custStreetView) {
+            custStreetView = new google.maps.StreetViewPanorama(
+                document.getElementById('customer-streetview'), {
+                    position: pos,
+                    pov: { heading: 0, pitch: 5 },
+                    zoom: 1,
+                    addressControl: true,
+                    addressControlOptions: { position: google.maps.ControlPosition.BOTTOM_CENTER },
+                    fullscreenControl: false,
+                    motionTracking: false,
+                    motionTrackingControl: false,
+                    zoomControl: true,
+                }
+            );
+            custMap.setStreetView(custStreetView);
+        } else {
+            custStreetView.setPosition(pos);
+            google.maps.event.trigger(custStreetView, 'resize');
+        }
+    });
+}
+
+function resetMapTabs() {
+    currentMapView = 'map';
+    document.querySelectorAll('.mtab-btn').forEach(b => {
+        b.classList.remove('bg-white', 'text-gray-800', 'shadow-sm');
+        b.classList.add('text-gray-500');
+    });
+    const mapTab = document.getElementById('mtab-map');
+    if (mapTab) { mapTab.classList.add('bg-white', 'text-gray-800', 'shadow-sm'); mapTab.classList.remove('text-gray-500'); }
+    document.getElementById('customer-map').style.display = '';
+    document.getElementById('customer-streetview').style.display = 'none';
+}
+
 function openMapOnModalShow(lat, lng) {
-    // Wait for modal animation to complete (250ms) so container has real dimensions
+    resetMapTabs();
     setTimeout(() => {
         if (window._mapsApiLoaded) {
-            initCustMap();        // no-op if already created
+            initCustMap();
             setupMapForModal(lat, lng);
         } else {
-            // API hasn't loaded yet; store for when initCustomerMapLib fires
-            _mapPendingLat = lat; // null for create, number for edit
+            _mapPendingLat = lat;
             _mapPendingLng = lng;
         }
     }, 250);
@@ -962,6 +1089,7 @@ function resetMapLocation() {
     custMarker.setPosition(pos);
     custMarker.setMap(custMap);
     syncCoordsFromMarker();
+    if (custStreetView) custStreetView.setPosition(pos);
 }
 
 function clearMapLocation() {
