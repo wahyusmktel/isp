@@ -96,4 +96,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/traffic/{router}', [\App\Http\Controllers\TrafficMonitorController::class, 'fetchTraffic'])->name('traffic.fetch');
 
     Route::get('/reports', [\App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
+
+    Route::get('/financial', [\App\Http\Controllers\FinancialController::class, 'index'])->name('financial.index');
+    Route::post('/financial/expenses', [\App\Http\Controllers\FinancialController::class, 'store'])->name('financial.expenses.store');
+    Route::put('/financial/expenses/{expense}', [\App\Http\Controllers\FinancialController::class, 'update'])->name('financial.expenses.update');
+    Route::delete('/financial/expenses/{expense}', [\App\Http\Controllers\FinancialController::class, 'destroy'])->name('financial.expenses.destroy');
 });
