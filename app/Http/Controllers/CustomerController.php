@@ -109,6 +109,7 @@ class CustomerController extends Controller
                 'pppoe_user' => fake()->userName(),
                 'status'     => 'aktif',
                 'join_date'  => now()->subDays(rand(0, 30))->format('Y-m-d'),
+                'billing_date' => rand(1, 28),
             ]);
             $customer->load('package:id,name,category');
             $generated[] = $customer->toJsonData();
@@ -134,8 +135,9 @@ class CustomerController extends Controller
             'pppoe_user' => 'nullable|string|max:100',
             'onu_id'     => 'nullable|string|max:100',
             'status'     => 'required|in:aktif,suspend,terminate',
-            'join_date'  => 'required|date',
-            'notes'      => 'nullable|string|max:1000',
+            'join_date'    => 'required|date',
+            'billing_date' => 'nullable|integer|min:1|max:31',
+            'notes'        => 'nullable|string|max:1000',
         ];
     }
 }

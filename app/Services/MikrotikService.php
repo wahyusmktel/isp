@@ -50,6 +50,19 @@ class MikrotikService
         return $this->parseAll($this->query('/ppp/secret/print'));
     }
 
+    public function getSimpleQueues(): array
+    {
+        return $this->parseAll($this->query('/queue/simple/print'));
+    }
+
+    public function getInterfaceTraffic(string $interface): array
+    {
+        return $this->parseOne($this->query('/interface/monitor-traffic', [
+            '=interface=' . $interface,
+            '=once=',
+        ]));
+    }
+
     public function close(): void
     {
         if ($this->socket) {

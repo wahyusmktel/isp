@@ -53,12 +53,19 @@
         <span class="sidebar-text whitespace-nowrap">PPPoE Mapping</span>
     </a>
 
-    <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Monitoring">
+    <a href="{{ route('monitoring.index') }}" class="sidebar-link {{ request()->routeIs('monitoring.*') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Monitoring">
         <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
         </svg>
         <span class="sidebar-text whitespace-nowrap">Monitoring</span>
         <span class="sidebar-badge ml-auto w-2 h-2 rounded-full bg-green-500 badge-pulse"></span>
+    </a>
+
+    <a href="{{ route('traffic.index') }}" class="sidebar-link {{ request()->routeIs('traffic.*') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Monitoring Trafik">
+        <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+        </svg>
+        <span class="sidebar-text whitespace-nowrap">Monitoring Trafik</span>
     </a>
 
     <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Tiket Gangguan">
@@ -71,7 +78,7 @@
 
     <p class="sidebar-label text-[10px] font-semibold uppercase tracking-widest text-gray-600 px-3 pt-4 pb-1">Umum</p>
 
-    <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Laporan">
+    <a href="{{ route('reports.index') }}" class="sidebar-link {{ request()->routeIs('reports.*') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Laporan">
         <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>

@@ -59,3 +59,10 @@ Route::post('/pppoe-mapping/map', [\App\Http\Controllers\PppoeMappingController:
 Route::delete('/pppoe-mapping/unmap/{customer}', [\App\Http\Controllers\PppoeMappingController::class, 'unmapCustomer'])->name('pppoe-mapping.unmap');
 Route::post('/pppoe-mapping/auto-map', [\App\Http\Controllers\PppoeMappingController::class, 'autoMap'])->name('pppoe-mapping.auto-map');
 
+Route::get('/monitoring', [\App\Http\Controllers\MonitoringController::class, 'index'])->name('monitoring.index');
+Route::get('/monitoring/refresh', [\App\Http\Controllers\MonitoringController::class, 'refresh'])->name('monitoring.refresh');
+
+Route::get('/traffic', [\App\Http\Controllers\TrafficMonitorController::class, 'index'])->name('traffic.index');
+Route::get('/traffic/{router}', [\App\Http\Controllers\TrafficMonitorController::class, 'fetchTraffic'])->name('traffic.fetch');
+
+Route::get('/reports', [\App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');

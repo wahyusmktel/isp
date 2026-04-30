@@ -357,6 +357,16 @@ $statusCfg = [
                                 <p class="err hidden text-xs text-red-500 mt-1" id="err-join_date"></p>
                             </div>
                             <div>
+                                <label class="lbl">Tanggal Tagihan <span class="text-gray-400 font-normal">(tiap bulan)</span></label>
+                                <select id="f-billing-date" name="billing_date" class="inp w-full">
+                                    @for($d = 1; $d <= 28; $d++)
+                                    <option value="{{ $d }}">Tanggal {{ $d }}</option>
+                                    @endfor
+                                </select>
+                                <p class="err hidden text-xs text-red-500 mt-1" id="err-billing_date"></p>
+                                <p class="text-[10px] text-gray-400 mt-1">Tanggal penerbitan tagihan setiap periode</p>
+                            </div>
+                            <div>
                                 <label class="lbl">IP Address</label>
                                 <input type="text" id="f-ip" name="ip_address" placeholder="cth. 192.168.1.101"
                                        class="inp w-full font-mono text-sm">
@@ -824,6 +834,7 @@ function openModal(mode, cust = null) {
         document.getElementById('f-pppoe').value   = cust.pppoe_user || '';
         document.getElementById('f-onu').value     = cust.onu_id || '';
         document.getElementById('f-notes').value   = cust.notes || '';
+        document.getElementById('f-billing-date').value = cust.billing_date || 1;
     } else {
         document.getElementById('modal-title').textContent    = 'Tambah Pelanggan';
         document.getElementById('modal-subtitle').textContent = 'Isi informasi lengkap pelanggan baru';
@@ -908,6 +919,7 @@ const ERR_MAP = {
     name: ['err-name','f-name'], phone: ['err-phone','f-phone'],
     email: ['err-email','f-email'], address: ['err-address','f-address'],
     package_id: ['err-package_id','f-package'], join_date: ['err-join_date','f-join'],
+    billing_date: ['err-billing_date','f-billing-date'],
 };
 
 function showErrors(errors) {

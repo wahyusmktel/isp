@@ -10,11 +10,12 @@ class Customer extends Model
     protected $fillable = [
         'name', 'email', 'phone', 'address',
         'package_id', 'ip_address', 'pppoe_user', 'onu_id',
-        'status', 'join_date', 'notes',
+        'status', 'join_date', 'billing_date', 'notes',
     ];
 
     protected $casts = [
-        'join_date' => 'date',
+        'join_date'    => 'date',
+        'billing_date' => 'integer',
     ];
 
     public function package(): BelongsTo
@@ -48,6 +49,7 @@ class Customer extends Model
             'status'       => $this->status,
             'join_date'    => $this->join_date?->format('Y-m-d') ?? '',
             'join_date_fmt'=> $this->join_date?->format('d M Y') ?? '—',
+            'billing_date' => $this->billing_date ?? 1,
             'notes'        => $this->notes ?? '',
         ];
     }
