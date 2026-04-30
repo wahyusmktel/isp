@@ -584,9 +584,205 @@
             .section { padding: 64px 0; }
             .btn-lg { padding: 13px 26px; font-size: .9rem; }
         }
+
+        /* ─── PRELOADER ─── */
+        #preloader {
+            position: fixed; inset: 0; z-index: 99999;
+            background: var(--dark);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity .6s ease, visibility .6s ease;
+        }
+        #preloader.loaded { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        /* Gauge container */
+        .gauge-wrap { position: relative; width: 280px; height: 170px; margin-bottom: 140px; }
+
+        /* Gauge SVG */
+        .gauge-svg { width: 280px; height: 170px; overflow: visible; }
+        .gauge-track {
+            fill: none; stroke: var(--dark-3); stroke-width: 14;
+            stroke-linecap: round;
+        }
+        .gauge-fill {
+            fill: none; stroke-width: 14; stroke-linecap: round;
+            stroke: url(#gaugeGrad);
+            stroke-dasharray: 283; stroke-dashoffset: 283;
+            animation: gaugeSweep 2.2s cubic-bezier(.4, 0, .2, 1) forwards;
+            filter: drop-shadow(0 0 8px rgba(14,165,233,.5));
+        }
+        @keyframes gaugeSweep {
+            0%   { stroke-dashoffset: 283; }
+            100% { stroke-dashoffset: 28; }
+        }
+
+        /* Needle */
+        .gauge-needle-group {
+            transform-origin: 110px 110px;
+            animation: needleSweep 2.2s cubic-bezier(.4, 0, .2, 1) forwards;
+        }
+        @keyframes needleSweep {
+            0%   { transform: rotate(-135deg); }
+            70%  { transform: rotate(120deg); }
+            85%  { transform: rotate(100deg); }
+            100% { transform: rotate(115deg); }
+        }
+        .gauge-needle {
+            fill: var(--text);
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,.5));
+        }
+        .gauge-center {
+            fill: var(--dark);
+            stroke: var(--primary); stroke-width: 3;
+            filter: drop-shadow(0 0 6px rgba(14,165,233,.4));
+        }
+
+        /* Speed counter */
+        .speed-counter {
+            position: absolute; bottom: -85px; left: 50%; transform: translateX(-50%);
+            text-align: center; white-space: nowrap;
+        }
+        .speed-counter .value {
+            font-size: 3.2rem; font-weight: 900; line-height: 1;
+            background: linear-gradient(135deg, var(--primary-lt), var(--primary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; font-variant-numeric: tabular-nums;
+        }
+        .speed-counter .unit {
+            font-size: .75rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: .12em; font-weight: 600;
+            margin-top: 2px;
+        }
+
+        /* Tick marks */
+        .gauge-tick { stroke: var(--dark-4); stroke-width: 2; stroke-linecap: round; }
+        .gauge-tick-label { fill: var(--text-muted); font-size: 8px; font-weight: 600; text-anchor: middle; }
+
+        /* Glow ring */
+        .gauge-glow {
+            position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
+            width: 340px; height: 210px; border-radius: 50%;
+            background: radial-gradient(ellipse 50% 60% at center, rgba(14,165,233,.12) 0%, transparent 70%);
+            animation: glowPulse 1.5s ease-in-out infinite alternate;
+        }
+        @keyframes glowPulse { 0% { opacity:.5; } 100% { opacity:1; } }
+
+        /* Particles */
+        .preloader-particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+        .particle {
+            position: absolute; border-radius: 50%; background: var(--primary);
+            animation: particleFloat linear infinite;
+            opacity: 0;
+        }
+        @keyframes particleFloat {
+            0%   { transform: translateY(0) scale(0); opacity: 0; }
+            20%  { opacity: .7; }
+            80%  { opacity: .3; }
+            100% { transform: translateY(-100vh) scale(1); opacity: 0; }
+        }
+
+        /* Loading text */
+        .loader-text {
+            font-size: .85rem; color: var(--text-muted); letter-spacing: .15em;
+            text-transform: uppercase; font-weight: 600;
+            margin-top: 35px;
+        }
+        .loader-text span { animation: blink 1.4s infinite step-end; }
+        .loader-text span:nth-child(2) { animation-delay: .2s; }
+        .loader-text span:nth-child(3) { animation-delay: .4s; }
+        @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+
+        /* Progress bar */
+        .loader-bar-wrap {
+            width: 180px; height: 3px; background: var(--dark-3);
+            border-radius: 99px; margin-top: 20px; overflow: hidden;
+        }
+        .loader-bar {
+            height: 100%; border-radius: 99px;
+            background: linear-gradient(90deg, var(--primary-dk), var(--primary-lt), var(--accent));
+            background-size: 200% 100%;
+            animation: barFill 2.2s ease forwards, barShimmer 1s linear infinite;
+        }
+        @keyframes barFill { 0%{width:0} 100%{width:100%} }
+        @keyframes barShimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+        /* Powered by */
+        .powered-by {
+            margin-top: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.6;
+        }
+        .powered-by p {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            font-weight: 700;
+        }
+        .powered-by img {
+            height: 42px;
+            filter: brightness(0) invert(1);
+        }
     </style>
 </head>
 <body>
+
+<!-- ══════════════ PRELOADER ══════════════ -->
+<div id="preloader">
+    <div class="preloader-particles" id="preloaderParticles"></div>
+    <div class="gauge-wrap">
+        <div class="gauge-glow"></div>
+        <svg class="gauge-svg" viewBox="0 0 220 130">
+            <defs>
+                <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#0284c7"/>
+                    <stop offset="50%" stop-color="#0ea5e9"/>
+                    <stop offset="80%" stop-color="#38bdf8"/>
+                    <stop offset="100%" stop-color="#f97316"/>
+                </linearGradient>
+            </defs>
+            <!-- Ticks -->
+            <line class="gauge-tick" x1="28" y1="106" x2="38" y2="100"/>
+            <line class="gauge-tick" x1="18" y1="80" x2="30" y2="78"/>
+            <line class="gauge-tick" x1="22" y1="52" x2="33" y2="56"/>
+            <line class="gauge-tick" x1="42" y1="28" x2="50" y2="36"/>
+            <line class="gauge-tick" x1="72" y1="12" x2="76" y2="24"/>
+            <line class="gauge-tick" x1="110" y1="6" x2="110" y2="18"/>
+            <line class="gauge-tick" x1="148" y1="12" x2="144" y2="24"/>
+            <line class="gauge-tick" x1="178" y1="28" x2="170" y2="36"/>
+            <line class="gauge-tick" x1="198" y1="52" x2="187" y2="56"/>
+            <line class="gauge-tick" x1="202" y1="80" x2="190" y2="78"/>
+            <line class="gauge-tick" x1="192" y1="106" x2="182" y2="100"/>
+            <!-- Tick labels -->
+            <text class="gauge-tick-label" x="22" y="118">0</text>
+            <text class="gauge-tick-label" x="14" y="48">25</text>
+            <text class="gauge-tick-label" x="67" y="8">50</text>
+            <text class="gauge-tick-label" x="153" y="8">75</text>
+            <text class="gauge-tick-label" x="204" y="48">100</text>
+            <!-- Track + Fill -->
+            <path class="gauge-track" d="M 28 110 A 90 90 0 0 1 192 110"/>
+            <path class="gauge-fill" d="M 28 110 A 90 90 0 0 1 192 110"/>
+            <!-- Needle -->
+            <g class="gauge-needle-group">
+                <polygon class="gauge-needle" points="110,30 106,110 114,110"/>
+            </g>
+            <circle class="gauge-center" cx="110" cy="110" r="8"/>
+        </svg>
+        <div class="speed-counter">
+            <div class="value" id="speedValue">0</div>
+            <div class="unit">Mbps Download</div>
+        </div>
+    </div>
+    <p class="loader-text">Mengukur Kecepatan<span>.</span><span>.</span><span>.</span></p>
+    <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+    
+    <div class="powered-by">
+        <p>Powered by</p>
+        <img src="{{ asset('logo.png') }}" alt="Tim-7 Net">
+    </div>
+</div>
 
 <!-- ══════════════ NAVBAR ══════════════ -->
 <nav id="navbar">
@@ -1493,6 +1689,51 @@
 
 <!-- ══════════════ SCRIPTS ══════════════ -->
 <script>
+    // ─── Preloader ─────────────────────────────────────────────────────────────
+    (function() {
+        // Spawn particles
+        const pContainer = document.getElementById('preloaderParticles');
+        for (let i = 0; i < 30; i++) {
+            const p = document.createElement('div');
+            p.classList.add('particle');
+            const size = Math.random() * 4 + 1;
+            p.style.width = size + 'px';
+            p.style.height = size + 'px';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.bottom = '-10px';
+            p.style.animationDuration = (Math.random() * 4 + 3) + 's';
+            p.style.animationDelay = (Math.random() * 2) + 's';
+            pContainer.appendChild(p);
+        }
+
+        // Animate speed counter 0 → 100
+        const speedEl = document.getElementById('speedValue');
+        const duration = 2200;
+        const start = performance.now();
+        function animateCount(now) {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+            speedEl.textContent = Math.round(eased * 100);
+            if (progress < 1) requestAnimationFrame(animateCount);
+        }
+        requestAnimationFrame(animateCount);
+
+        // Dismiss after page load (min 2.4s for animation)
+        let loadedAt = null;
+        window.addEventListener('load', () => { loadedAt = Date.now(); });
+        function tryDismiss() {
+            const minTime = 2400;
+            const elapsed = loadedAt ? (Date.now() - performance.timeOrigin) : 0;
+            if (loadedAt && elapsed >= minTime) {
+                document.getElementById('preloader').classList.add('loaded');
+            } else {
+                setTimeout(tryDismiss, 200);
+            }
+        }
+        setTimeout(tryDismiss, 2400);
+    })();
+
     // Navbar scroll effect
     const navbar = document.getElementById('navbar');
     window.addEventListener('scroll', () => {
