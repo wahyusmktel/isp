@@ -85,15 +85,16 @@
         <span class="sidebar-text whitespace-nowrap">Monitoring Trafik</span>
     </a>
 
-    @if(auth()->user()->role === 'admin')
-    <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Tiket Gangguan">
+    <a href="{{ route('tickets.index') }}" class="sidebar-link {{ request()->routeIs('tickets.*') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Tiket Gangguan">
         <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/>
         </svg>
         <span class="sidebar-text whitespace-nowrap">Tiket Gangguan</span>
-        <span class="sidebar-badge ml-auto text-[10px] text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded font-semibold">5</span>
+        @php $openTickets = \App\Models\Ticket::whereIn('status', ['open', 'in_progress'])->count(); @endphp
+        @if($openTickets > 0)
+        <span class="sidebar-badge ml-auto text-[10px] text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded font-semibold">{{ $openTickets }}</span>
+        @endif
     </a>
-    @endif
 
     <p class="sidebar-label text-[10px] font-semibold uppercase tracking-widest text-gray-600 px-3 pt-4 pb-1">Umum</p>
 

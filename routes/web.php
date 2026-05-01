@@ -24,6 +24,7 @@ Route::get('/customer/login', [\App\Http\Controllers\CustomerAuthController::cla
 Route::post('/customer/login', [\App\Http\Controllers\CustomerAuthController::class, 'login'])->name('customer.login.post');
 Route::post('/customer/logout', [\App\Http\Controllers\CustomerAuthController::class, 'logout'])->name('customer.logout');
 Route::get('/customer/dashboard', [\App\Http\Controllers\CustomerPortalController::class, 'dashboard'])->name('customer.dashboard');
+Route::post('/customer/tickets', [\App\Http\Controllers\CustomerTicketController::class, 'store'])->name('customer.tickets.store');
 
 // ─── Authenticated (harus login) ─────────────────────────────────────────────
 Route::middleware('auth')->group(function () {
@@ -116,6 +117,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/employees', [\App\Http\Controllers\EmployeeController::class, 'store'])->name('employees.store');
     Route::put('/employees/{employee}', [\App\Http\Controllers\EmployeeController::class, 'update'])->name('employees.update');
     Route::delete('/employees/{employee}', [\App\Http\Controllers\EmployeeController::class, 'destroy'])->name('employees.destroy');
+
+    Route::get('/tickets', [\App\Http\Controllers\TicketController::class, 'index'])->name('tickets.index');
+    Route::put('/tickets/{ticket}', [\App\Http\Controllers\TicketController::class, 'update'])->name('tickets.update');
+    Route::delete('/tickets/{ticket}', [\App\Http\Controllers\TicketController::class, 'destroy'])->name('tickets.destroy');
 
     Route::get('/financial', [\App\Http\Controllers\FinancialController::class, 'index'])->name('financial.index');
     Route::post('/financial/expenses', [\App\Http\Controllers\FinancialController::class, 'store'])->name('financial.expenses.store');
