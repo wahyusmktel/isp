@@ -43,9 +43,10 @@ class PppoeMappingController extends Controller
         $activeMap = [];
         foreach ($actives as $a) {
             $activeMap[$a['name'] ?? ''] = [
-                'address' => $a['address'] ?? '',
-                'uptime'  => $a['uptime'] ?? '',
-                'service' => $a['service'] ?? '',
+                'address'   => $a['address'] ?? '',
+                'uptime'    => $a['uptime'] ?? '',
+                'service'   => $a['service'] ?? '',
+                'caller-id' => $a['caller-id'] ?? '',
             ];
         }
 
@@ -62,6 +63,7 @@ class PppoeMappingController extends Controller
                 'online'   => isset($activeMap[$username]),
                 'ip'       => $activeMap[$username]['address'] ?? '',
                 'uptime'   => $activeMap[$username]['uptime'] ?? '',
+                'mac'      => $activeMap[$username]['caller-id'] ?? '',
             ];
         }
 

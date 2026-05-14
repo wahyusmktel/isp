@@ -81,7 +81,7 @@
                         <th class="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Status</th>
                         <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden md:table-cell">Profile</th>
                         <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">IP / Uptime</th>
-                        <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden xl:table-cell">MAC ONT</th>
+                        <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">MAC ONT</th>
                         <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Pelanggan</th>
                         <th class="text-right text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-3">Aksi</th>
                     </tr>
@@ -244,14 +244,17 @@ function renderTable() {
             <td class="px-4 py-3 hidden lg:table-cell">
                 ${s.online ? `<p class="font-mono text-xs text-gray-700">${s.ip}</p><p class="text-[10px] text-gray-400">${s.uptime}</p>` : '<span class="text-xs text-gray-400">—</span>'}
             </td>
-            <td class="px-4 py-3 hidden xl:table-cell">
-                ${mapped
-                    ? `<input type="text" value="${mapped.mac_ont || ''}"
-                              placeholder="AA:BB:CC:DD:EE:FF"
-                              maxlength="17"
-                              data-customer-id="${mapped.id}"
-                              onchange="saveMacOnt(${mapped.id}, this)"
-                              class="font-mono text-xs bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 w-36 focus:outline-none focus:ring-1 focus:ring-indigo-400 focus:border-indigo-400 transition-colors">`
+            <td class="px-4 py-3 hidden lg:table-cell">
+                ${s.mac
+                    ? `<div class="flex items-center gap-1.5">
+                           <span class="font-mono text-xs text-gray-700">${s.mac}</span>
+                           <button type="button" onclick="copyMac('${s.mac}', this)" title="Copy MAC"
+                                   class="w-6 h-6 rounded-md bg-gray-100 hover:bg-indigo-50 hover:text-indigo-600 text-gray-400 flex items-center justify-center transition-colors flex-shrink-0">
+                               <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                   <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                               </svg>
+                           </button>
+                       </div>`
                     : '<span class="text-xs text-gray-400">—</span>'}
             </td>
             <td class="px-4 py-3">${customerCell}</td>
@@ -331,35 +334,22 @@ function updateStats() {
     document.getElementById('stat-unmapped').textContent = total - mapped;
 }
 
-async function saveMacOnt(customerId, input) {
-    const raw = input.value.trim().toUpperCase();
-    const macRegex = /^([0-9A-F]{2}:){5}[0-9A-F]{2}$|^$/;
-    if (!macRegex.test(raw)) {
-        showToast('Format MAC tidak valid (contoh: AA:BB:CC:DD:EE:FF)', 'error');
-        input.focus();
-        return;
-    }
-
-    input.disabled = true;
+async function copyMac(mac, btn) {
     try {
-        const res = await fetch(`/pppoe-mapping/mac-ont/${customerId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            body: JSON.stringify({ mac_ont: raw || null }),
-        });
-        const data = await res.json();
-        if (data.success) {
-            input.value = data.mac_ont || '';
-            const ci = CUSTOMERS.findIndex(c => c.id == customerId);
-            if (ci > -1) CUSTOMERS[ci].mac_ont = data.mac_ont || '';
-            showToast(data.message, 'success');
-        } else {
-            showToast(data.message || 'Gagal menyimpan MAC ONT', 'error');
-        }
-    } catch (err) {
-        showToast('Koneksi bermasalah', 'error');
-    } finally {
-        input.disabled = false;
+        await navigator.clipboard.writeText(mac);
+        // Swap icon to checkmark briefly
+        const origHTML = btn.innerHTML;
+        btn.innerHTML = `<svg class="w-3 h-3 text-green-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>`;
+        btn.classList.add('bg-green-50', 'text-green-600');
+        showToast(`MAC ${mac} berhasil disalin ke clipboard`, 'success');
+        setTimeout(() => {
+            btn.innerHTML = origHTML;
+            btn.classList.remove('bg-green-50', 'text-green-600');
+        }, 2000);
+    } catch {
+        showToast('Gagal menyalin MAC ke clipboard', 'error');
     }
 }
 
