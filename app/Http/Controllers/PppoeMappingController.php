@@ -114,6 +114,24 @@ class PppoeMappingController extends Controller
     }
 
     /**
+     * Update MAC ONT address on a customer.
+     */
+    public function updateMacOnt(Request $request, Customer $customer): JsonResponse
+    {
+        $request->validate([
+            'mac_ont' => 'nullable|string|max:17',
+        ]);
+
+        $customer->update(['mac_ont' => $request->mac_ont ?: null]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "MAC ONT pelanggan \"{$customer->name}\" berhasil diperbarui.",
+            'mac_ont' => $customer->mac_ont,
+        ]);
+    }
+
+    /**
      * Bulk auto-map: match PPPoE usernames to customers by exact pppoe_user match.
      */
     public function autoMap(Request $request): JsonResponse

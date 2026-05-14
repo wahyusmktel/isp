@@ -9,7 +9,7 @@ class Customer extends Model
 {
     protected $fillable = [
         'customer_number', 'name', 'email', 'phone', 'address',
-        'package_id', 'ip_address', 'pppoe_user', 'onu_id',
+        'package_id', 'ip_address', 'pppoe_user', 'onu_id', 'mac_ont',
         'status', 'join_date', 'billing_date', 'notes',
         'latitude', 'longitude',
     ];
@@ -50,6 +50,7 @@ class Customer extends Model
             'ip_address'   => $this->ip_address ?? '',
             'pppoe_user'   => $this->pppoe_user ?? '',
             'onu_id'       => $this->onu_id ?? '',
+            'mac_ont'      => $this->mac_ont ?? '',
             'status'       => $this->status,
             'join_date'    => $this->join_date?->format('Y-m-d') ?? '',
             'join_date_fmt'=> $this->join_date?->format('d M Y') ?? '—',

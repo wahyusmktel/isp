@@ -94,6 +94,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/pppoe-mapping/map', [\App\Http\Controllers\PppoeMappingController::class, 'mapCustomer'])->name('pppoe-mapping.map');
     Route::delete('/pppoe-mapping/unmap/{customer}', [\App\Http\Controllers\PppoeMappingController::class, 'unmapCustomer'])->name('pppoe-mapping.unmap');
     Route::post('/pppoe-mapping/auto-map', [\App\Http\Controllers\PppoeMappingController::class, 'autoMap'])->name('pppoe-mapping.auto-map');
+    Route::patch('/pppoe-mapping/mac-ont/{customer}', [\App\Http\Controllers\PppoeMappingController::class, 'updateMacOnt'])->name('pppoe-mapping.mac-ont');
 
     Route::get('/monitoring', [\App\Http\Controllers\MonitoringController::class, 'index'])->name('monitoring.index');
     Route::get('/monitoring/refresh', [\App\Http\Controllers\MonitoringController::class, 'refresh'])->name('monitoring.refresh');

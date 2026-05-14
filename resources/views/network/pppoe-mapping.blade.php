@@ -81,12 +81,13 @@
                         <th class="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Status</th>
                         <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden md:table-cell">Profile</th>
                         <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">IP / Uptime</th>
+                        <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden xl:table-cell">MAC ONT</th>
                         <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Pelanggan</th>
                         <th class="text-right text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-3">Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="mapping-tbody">
-                    <tr><td colspan="6" class="px-5 py-16 text-center text-gray-400">Pilih router dan klik "Ambil Data PPPoE" untuk memulai</td></tr>
+                    <tr><td colspan="7" class="px-5 py-16 text-center text-gray-400">Pilih router dan klik "Ambil Data PPPoE" untuk memulai</td></tr>
                 </tbody>
             </table>
         </div>
@@ -176,7 +177,7 @@ function getMappedCustomer(username) {
 function renderTable() {
     const tbody = document.getElementById('mapping-tbody');
     if (!SECRETS.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="px-5 py-16 text-center text-gray-400">Tidak ada akun PPPoE di router ini</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="px-5 py-16 text-center text-gray-400">Tidak ada akun PPPoE di router ini</td></tr>';
         return;
     }
 
@@ -242,6 +243,16 @@ function renderTable() {
             <td class="px-4 py-3 hidden md:table-cell"><span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-lg font-medium">${s.profile || '—'}</span></td>
             <td class="px-4 py-3 hidden lg:table-cell">
                 ${s.online ? `<p class="font-mono text-xs text-gray-700">${s.ip}</p><p class="text-[10px] text-gray-400">${s.uptime}</p>` : '<span class="text-xs text-gray-400">—</span>'}
+            </td>
+            <td class="px-4 py-3 hidden xl:table-cell">
+                ${mapped
+                    ? `<input type="text" value="${mapped.mac_ont || ''}"
+                              placeholder="AA:BB:CC:DD:EE:FF"
+                              maxlength="17"
+                              data-customer-id="${mapped.id}"
+                              onchange="saveMacOnt(${mapped.id}, this)"
+                              class="font-mono text-xs bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 w-36 focus:outline-none focus:ring-1 focus:ring-indigo-400 focus:border-indigo-400 transition-colors">`
+                    : '<span class="text-xs text-gray-400">—</span>'}
             </td>
             <td class="px-4 py-3">${customerCell}</td>
             <td class="px-5 py-3"><div class="flex items-center justify-end gap-1">${actionCell}</div></td>
@@ -318,6 +329,38 @@ function updateStats() {
     document.getElementById('stat-online').textContent = online;
     document.getElementById('stat-mapped').textContent = mapped;
     document.getElementById('stat-unmapped').textContent = total - mapped;
+}
+
+async function saveMacOnt(customerId, input) {
+    const raw = input.value.trim().toUpperCase();
+    const macRegex = /^([0-9A-F]{2}:){5}[0-9A-F]{2}$|^$/;
+    if (!macRegex.test(raw)) {
+        showToast('Format MAC tidak valid (contoh: AA:BB:CC:DD:EE:FF)', 'error');
+        input.focus();
+        return;
+    }
+
+    input.disabled = true;
+    try {
+        const res = await fetch(`/pppoe-mapping/mac-ont/${customerId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            body: JSON.stringify({ mac_ont: raw || null }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            input.value = data.mac_ont || '';
+            const ci = CUSTOMERS.findIndex(c => c.id == customerId);
+            if (ci > -1) CUSTOMERS[ci].mac_ont = data.mac_ont || '';
+            showToast(data.message, 'success');
+        } else {
+            showToast(data.message || 'Gagal menyimpan MAC ONT', 'error');
+        }
+    } catch (err) {
+        showToast('Koneksi bermasalah', 'error');
+    } finally {
+        input.disabled = false;
+    }
 }
 
 function filterTable() {
