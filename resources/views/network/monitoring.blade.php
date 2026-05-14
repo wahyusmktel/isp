@@ -293,17 +293,34 @@ function updateCustomerRows(customers) {
         avatar.className = `w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 cust-avatar bg-gradient-to-br ${isOnline ? 'from-green-400 to-green-600' : 'from-gray-300 to-gray-400'}`;
 
         row.querySelector('.cust-ip').textContent     = cData?.ip || '—';
-        row.querySelector('.cust-uptime').textContent  = cData?.uptime || '—';
+        row.querySelector('.cust-uptime').textContent  = cData?.uptime ? formatUptime(cData.uptime) : '—';
     });
+}
+
+function formatUptime(raw) {
+    if (!raw || raw === '—') return '—';
+    const m = raw.match(/(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/);
+    if (!m) return raw;
+    const parts = [];
+    if (m[1]) parts.push(m[1] + ' minggu');
+    if (m[2]) parts.push(m[2] + ' hari');
+    if (m[3]) parts.push(m[3] + ' jam');
+    if (m[4]) parts.push(m[4] + ' menit');
+    if (m[5]) parts.push(m[5] + ' detik');
+    return parts.length ? parts.join(' ') : '—';
 }
 
 function shortenUptime(ut) {
     if (!ut || ut === '—') return '—';
-    // "1w2d3h4m5s" → "1w2d"
-    const match = ut.match(/(\d+w)?(\d+d)?(\d+h)?(\d+m)?/);
-    if (!match) return ut;
-    const parts = [match[1], match[2], match[3]].filter(Boolean);
-    return parts.length ? parts.slice(0, 2).join('') : ut.replace(/s$/, '') ;
+    // Untuk router card yang space terbatas: "3 hari 8 jam" (maks 2 satuan)
+    const m = ut.match(/(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/);
+    if (!m) return ut;
+    const parts = [];
+    if (m[1]) parts.push(m[1] + 'mg');
+    if (m[2]) parts.push(m[2] + 'h');
+    if (m[3]) parts.push(m[3] + 'j');
+    if (m[4]) parts.push(m[4] + 'm');
+    return parts.length ? parts.slice(0, 2).join(' ') : ut;
 }
 
 // ─── Filter ───────────────────────────────────────────────────────────────

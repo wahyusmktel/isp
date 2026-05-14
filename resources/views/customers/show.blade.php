@@ -82,6 +82,16 @@
                     <p class="text-xs text-gray-400 mb-1">ONU / SN / Modem ID</p>
                     <p class="text-sm font-medium text-gray-900 font-mono">{{ $customer->onu_id ?? '-' }}</p>
                 </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">Uptime Koneksi</p>
+                    <p id="uptime-display" class="text-sm font-medium text-gray-900">
+                        @if(empty($customer->pppoe_user))
+                            <span class="text-gray-400">—</span>
+                        @else
+                            <span class="text-gray-400">Memuat...</span>
+                        @endif
+                    </p>
+                </div>
             </div>
         </div>
     </div>
@@ -133,6 +143,19 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+function formatUptime(raw) {
+    if (!raw) return '—';
+    const m = raw.match(/(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/);
+    if (!m) return raw;
+    const parts = [];
+    if (m[1]) parts.push(m[1] + ' minggu');
+    if (m[2]) parts.push(m[2] + ' hari');
+    if (m[3]) parts.push(m[3] + ' jam');
+    if (m[4]) parts.push(m[4] + ' menit');
+    if (m[5]) parts.push(m[5] + ' detik');
+    return parts.length ? parts.join(' ') : '—';
+}
+
 document.addEventListener("DOMContentLoaded", function() {
     // ─── Setup Traffic Chart (Live Simulation) ───
     const ctxTraffic = document.getElementById('trafficChart').getContext('2d');
@@ -233,7 +256,16 @@ document.addEventListener("DOMContentLoaded", function() {
             if (!data.success) {
                 document.getElementById('current-rx').textContent = '-';
                 document.getElementById('current-tx').textContent = '-';
+                document.getElementById('uptime-display').textContent = '—';
                 return;
+            }
+
+            // Update uptime
+            const uptimeEl = document.getElementById('uptime-display');
+            if (data.uptime) {
+                uptimeEl.textContent = formatUptime(data.uptime);
+            } else {
+                uptimeEl.textContent = 'Offline';
             }
 
             const rx = data.rx;

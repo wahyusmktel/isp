@@ -84,9 +84,9 @@ class CustomerController extends Controller
 
         // Cari interface PPPoE (biasanya berawalan <pppoe-username>)
         $interface = '<pppoe-' . $customer->pppoe_user . '>';
-        $traffic = $mikrotik->getInterfaceTraffic($interface);
+        $traffic   = $mikrotik->getInterfaceTraffic($interface);
 
-        // Ambil penggunaan data uptime dari interface
+        // Ambil penggunaan data dari interface
         $interfaces = $mikrotik->getInterfaces();
         $rxBytes = 0;
         $txBytes = 0;
@@ -97,11 +97,21 @@ class CustomerController extends Controller
                 break;
             }
         }
-        
-        // Konversi ke GB (Catatan: RX mikrotik = Upload pelanggan, TX mikrotik = Download pelanggan)
+
+        // Ambil uptime dari sesi PPPoE aktif
+        $actives = $mikrotik->getPppoeActives();
+        $uptime  = '';
+        foreach ($actives as $a) {
+            if (($a['name'] ?? '') === $customer->pppoe_user) {
+                $uptime = $a['uptime'] ?? '';
+                break;
+            }
+        }
+
+        // Konversi ke GB (RX mikrotik = Upload pelanggan, TX mikrotik = Download pelanggan)
         $usageData = [
             'download_gb' => round($txBytes / 1073741824, 2),
-            'upload_gb'   => round($rxBytes / 1073741824, 2)
+            'upload_gb'   => round($rxBytes / 1073741824, 2),
         ];
 
         $mikrotik->close();
@@ -110,20 +120,20 @@ class CustomerController extends Controller
             return response()->json([
                 'success' => true,
                 'status'  => 'offline',
-                'rx'      => 0, // ini untuk Download di frontend
-                'tx'      => 0, // ini untuk Upload di frontend
-                'usage'   => $usageData
+                'rx'      => 0,
+                'tx'      => 0,
+                'uptime'  => '',
+                'usage'   => $usageData,
             ]);
         }
 
         return response()->json([
             'success' => true,
             'status'  => 'online',
-            // Konversi dari bps ke Mbps 
-            // Router TX -> Customer Download, Router RX -> Customer Upload
             'rx'      => round((int)$traffic['tx-bits-per-second'] / 1000000, 2),
             'tx'      => round((int)$traffic['rx-bits-per-second'] / 1000000, 2),
-            'usage'   => $usageData
+            'uptime'  => $uptime,
+            'usage'   => $usageData,
         ]);
     }
 
