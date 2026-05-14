@@ -30,7 +30,7 @@ $statusCfg = [
         </form>
 
         @if(auth()->user()->role === 'admin')
-        <button type="button" onclick="generateMass()" id="btn-generate-mass"
+        <button type="button" onclick="generateMass('{{ $period }}')" id="btn-generate-mass"
                 class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors cursor-pointer">
             <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
@@ -452,7 +452,7 @@ $statusCfg = [
                 <div>
                     <h3 class="text-base font-bold text-gray-900">Generate Tagihan Massal?</h3>
                     <p class="text-sm text-gray-500 mt-1 leading-relaxed">
-                        Sistem akan membuat tagihan otomatis untuk seluruh pelanggan <strong>Aktif</strong> pada bulan ini yang belum memiliki tagihan. Lanjutkan?
+                        Sistem akan membuat tagihan otomatis untuk seluruh pelanggan <strong>Aktif</strong> pada periode <strong id="mass-period-label"></strong> yang belum memiliki tagihan. Lanjutkan?
                     </p>
                 </div>
             </div>
@@ -505,6 +505,7 @@ const STATUS = {
 // ─── State ───────────────────────────────────────────────────────────────────
 let activeFilter   = 'all';
 let deleteTargetId = null;
+let massGenPeriod  = '{{ $period }}';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getInv(id) { return __invs.find(i => i.id === id) || null; }
@@ -919,10 +920,16 @@ async function executeDelete() {
 }
 
 // ─── Generate Massal ────────────────────────────────────────────────────────
-function generateMass() {
+function generateMass(period) {
+    massGenPeriod = period || '{{ $period }}';
+
+    // Format label periode (YYYY-MM → "Mei 2026")
+    const [y, m] = massGenPeriod.split('-');
+    const label = new Date(y, m - 1, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+    document.getElementById('mass-period-label').textContent = label;
+
     const modal = document.getElementById('mass-modal');
     const card  = document.getElementById('mass-card');
-    
     modal.classList.remove('hidden');
     requestAnimationFrame(() => requestAnimationFrame(() => {
         card.classList.remove('scale-95','opacity-0');
@@ -954,7 +961,12 @@ async function executeMass() {
     try {
         const res = await fetch('/invoices/generate-mass', {
             method: 'POST',
-            headers: { 'X-CSRF-TOKEN': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+            headers: {
+                'X-CSRF-TOKEN': CSRF,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ period: massGenPeriod }),
         });
         
         const data = await res.json();

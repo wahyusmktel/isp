@@ -6,6 +6,11 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// ─── Public News ─────────────────────────────────────────────────────────────
+Route::get('/berita', [\App\Http\Controllers\NewsController::class, 'index'])->name('news.index');
+Route::get('/berita/{slug}', [\App\Http\Controllers\NewsController::class, 'show'])->name('news.show');
+Route::post('/berita/{news}/komentar', [\App\Http\Controllers\NewsCommentController::class, 'store'])->name('news.comment.store');
+
 Route::get('/terms', function () {
     return view('terms');
 })->name('terms');
@@ -117,6 +122,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/employees', [\App\Http\Controllers\EmployeeController::class, 'store'])->name('employees.store');
     Route::put('/employees/{employee}', [\App\Http\Controllers\EmployeeController::class, 'update'])->name('employees.update');
     Route::delete('/employees/{employee}', [\App\Http\Controllers\EmployeeController::class, 'destroy'])->name('employees.destroy');
+
+    Route::get('/news', [\App\Http\Controllers\NewsAdminController::class, 'index'])->name('news.admin');
+    Route::post('/news', [\App\Http\Controllers\NewsAdminController::class, 'store'])->name('news.store');
+    Route::post('/news/{news}', [\App\Http\Controllers\NewsAdminController::class, 'update'])->name('news.update');
+    Route::delete('/news/{news}', [\App\Http\Controllers\NewsAdminController::class, 'destroy'])->name('news.destroy');
+    Route::delete('/news/comments/{comment}', [\App\Http\Controllers\NewsAdminController::class, 'destroyComment'])->name('news.comment.destroy');
 
     Route::get('/tickets', [\App\Http\Controllers\TicketController::class, 'index'])->name('tickets.index');
     Route::put('/tickets/{ticket}', [\App\Http\Controllers\TicketController::class, 'update'])->name('tickets.update');

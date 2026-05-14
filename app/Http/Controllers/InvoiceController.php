@@ -124,17 +124,18 @@ class InvoiceController extends Controller
 
     public function generateMass(Request $request): JsonResponse
     {
-        $currentDate = now();
-        $period = $currentDate->startOfMonth();
-        $dueDate = $currentDate->copy()->addDays(7); // Due date is 7 days from now
+        $request->validate(['period' => 'nullable|date_format:Y-m']);
+
+        $periodInput = $request->get('period', now()->format('Y-m'));
+        $period = \Carbon\Carbon::createFromFormat('Y-m', $periodInput)->startOfMonth();
+        $dueDate = $period->copy()->addDays(7);
 
         $customers = Customer::with('package')->where('status', 'aktif')->get();
         $count = 0;
 
         foreach ($customers as $customer) {
-            if (!$customer->package) continue; // Skip if no package
+            if (!$customer->package) continue;
 
-            // Check if invoice already exists for this customer in the current month
             $exists = Invoice::where('customer_id', $customer->id)
                 ->whereYear('billing_period', $period->year)
                 ->whereMonth('billing_period', $period->month)
@@ -148,8 +149,8 @@ class InvoiceController extends Controller
                     'amount'         => $customer->package->price,
                     'status'         => 'unpaid',
                     'due_date'       => $dueDate->format('Y-m-d'),
-                    'payment_method' => 'Transfer Bank', // Default
-                    'notes'          => 'Tagihan otomatis periode ' . $period->format('F Y'),
+                    'payment_method' => 'Transfer Bank',
+                    'notes'          => 'Tagihan otomatis periode ' . $period->translatedFormat('F Y'),
                 ]);
                 $count++;
             }
@@ -157,7 +158,7 @@ class InvoiceController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Berhasil memproses tagihan massal. {$count} tagihan baru dibuat.",
+            'message' => "Berhasil memproses tagihan massal periode {$period->translatedFormat('F Y')}. {$count} tagihan baru dibuat.",
         ]);
     }
 

@@ -798,6 +798,7 @@
                 <li><a href="#cara-kerja">Cara Berlangganan</a></li>
                 <li><a href="#coverage">Coverage</a></li>
                 <li><a href="#kontak">Kontak</a></li>
+                <li><a href="{{ route('news.index') }}">Berita</a></li>
                 <li><a href="{{ route('terms') }}">Syarat & Ketentuan</a></li>
             </ul>
 
@@ -826,6 +827,7 @@
                 <li><a href="#cara-kerja" class="mob-link">Cara Berlangganan</a></li>
                 <li><a href="#coverage" class="mob-link">Coverage Area</a></li>
                 <li><a href="#kontak" class="mob-link">Kontak</a></li>
+                <li><a href="{{ route('news.index') }}" class="mob-link">Berita</a></li>
                 <li><a href="{{ route('terms') }}" class="mob-link">Syarat & Ketentuan</a></li>
             </ul>
             <div class="mob-actions">
@@ -1276,6 +1278,64 @@
         </div>
     </div>
 </section>
+
+<!-- ══════════════ BERITA TERBARU ══════════════ -->
+@php
+$latestNews = \App\Models\News::where('status','published')
+    ->latest('published_at')->take(3)->get();
+@endphp
+@if($latestNews->count())
+<section class="section" id="berita" style="padding-bottom:48px">
+    <div class="container">
+        <div style="text-align:center;margin-bottom:52px">
+            <span class="badge"><i class="fas fa-newspaper" style="font-size:.7rem"></i> Informasi Terbaru</span>
+            <h2 class="section-title">Berita & <span class="text-gradient">Pengumuman</span></h2>
+            <p class="section-sub" style="margin:10px auto 0">Pantau informasi terkini seputar layanan, gangguan, dan promo dari Tim-7 Net.</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px">
+            @foreach($latestNews as $n)
+            @php
+                $nc = $n->category_color;
+                $nBorderColor = ['blue'=>'rgba(59,130,246,.4)','red'=>'rgba(239,68,68,.4)','amber'=>'rgba(245,158,11,.4)','green'=>'rgba(34,197,94,.4)','gray'=>'rgba(148,163,184,.3)'][$nc] ?? 'rgba(148,163,184,.3)';
+                $nBadgeBg = ['blue'=>'rgba(59,130,246,.15)','red'=>'rgba(239,68,68,.15)','amber'=>'rgba(245,158,11,.15)','green'=>'rgba(34,197,94,.15)','gray'=>'rgba(148,163,184,.1)'][$nc] ?? 'rgba(148,163,184,.1)';
+                $nBadgeColor = ['blue'=>'#60a5fa','red'=>'#f87171','amber'=>'#fbbf24','green'=>'#4ade80','gray'=>'#94a3b8'][$nc] ?? '#94a3b8';
+            @endphp
+            <a href="{{ route('news.show', $n->slug) }}"
+               style="background:var(--dark-3);border:1px solid var(--dark-4);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;transition:border-color .25s,transform .25s;text-decoration:none"
+               onmouseover="this.style.borderColor='{{ $nBorderColor }}';this.style.transform='translateY(-3px)'"
+               onmouseout="this.style.borderColor='var(--dark-4)';this.style.transform='translateY(0)'">
+                @if($n->cover_image_url)
+                <img src="{{ $n->cover_image_url }}" alt="{{ $n->title }}"
+                     style="width:100%;height:200px;object-fit:cover;display:block" loading="lazy">
+                @else
+                <div style="width:100%;height:200px;background:linear-gradient(135deg,var(--dark-2),var(--dark-4));display:flex;align-items:center;justify-content:center">
+                    <i class="fas fa-newspaper" style="font-size:2.5rem;color:var(--dark-4)"></i>
+                </div>
+                @endif
+                <div style="padding:22px 24px 26px;flex:1;display:flex;flex-direction:column">
+                    <span style="display:inline-flex;align-items:center;gap:5px;background:{{ $nBadgeBg }};color:{{ $nBadgeColor }};border-radius:5px;font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;margin-bottom:12px;width:fit-content">
+                        {{ $n->category_label }}
+                    </span>
+                    <h3 style="font-size:1rem;font-weight:700;color:var(--text);line-height:1.4;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ $n->title }}</h3>
+                    @if($n->excerpt)
+                    <p style="font-size:.83rem;color:var(--text-muted);line-height:1.6;flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">{{ $n->excerpt }}</p>
+                    @endif
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-size:.75rem;color:var(--text-muted)">
+                        <span><i class="fas fa-calendar" style="margin-right:5px"></i>{{ $n->published_at?->format('d M Y') }}</span>
+                        <span style="color:var(--primary);font-weight:600;display:flex;align-items:center;gap:5px">Baca <i class="fas fa-arrow-right" style="font-size:.7rem"></i></span>
+                    </div>
+                </div>
+            </a>
+            @endforeach
+        </div>
+        <div style="text-align:center;margin-top:44px">
+            <a href="{{ route('news.index') }}" class="btn btn-outline">
+                Lihat Semua Berita <i class="fas fa-arrow-right" style="font-size:.8rem"></i>
+            </a>
+        </div>
+    </div>
+</section>
+@endif
 
 <!-- ══════════════ CTA STRIP ══════════════ -->
 <div class="cta-strip">
