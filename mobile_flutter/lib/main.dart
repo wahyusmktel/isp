@@ -25,6 +25,14 @@ class Tim7NetApp extends StatelessWidget {
         ),
         scaffoldBackgroundColor: const Color(0xFFF6F8FB),
         fontFamily: 'Roboto',
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+        ),
       ),
       home: const SessionGate(),
     );
@@ -58,19 +66,40 @@ class MobileApi {
 
   Future<CustomerSession> invoices(String customerNumber) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/customer/invoices').replace(
-      queryParameters: {
-        'customer_number': customerNumber,
-        'limit': '25',
-      },
+      queryParameters: {'customer_number': customerNumber, 'limit': '25'},
     );
-    final response = await http.get(uri, headers: const {'Accept': 'application/json'});
+    final response = await http.get(
+      uri,
+      headers: const {'Accept': 'application/json'},
+    );
 
     final json = _decode(response);
     if (response.statusCode >= 400 || json['success'] != true) {
-      throw ApiException(json['message']?.toString() ?? 'Gagal memuat tagihan.');
+      throw ApiException(
+        json['message']?.toString() ?? 'Gagal memuat tagihan.',
+      );
     }
 
     return CustomerSession.fromJson(json);
+  }
+
+  Future<List<NewsItem>> news() async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/news',
+    ).replace(queryParameters: {'limit': '5'});
+    final response = await http.get(
+      uri,
+      headers: const {'Accept': 'application/json'},
+    );
+
+    final json = _decode(response);
+    if (response.statusCode >= 400 || json['success'] != true) {
+      throw ApiException(json['message']?.toString() ?? 'Gagal memuat berita.');
+    }
+
+    return ((json['news'] as List?) ?? const [])
+        .map((item) => NewsItem.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   Map<String, dynamic> _decode(http.Response response) {
@@ -129,7 +158,11 @@ class Customer {
   final String packageName;
   final int billingDate;
 
-  String get firstName => name.trim().split(RegExp(r'\s+')).first;
+  String get firstName {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return 'Pelanggan';
+    return trimmed.split(RegExp(r'\s+')).first;
+  }
 
   factory Customer.fromJson(Map<String, dynamic> json) {
     return Customer(
@@ -158,6 +191,8 @@ class BillingSummary {
   final int overdue;
   final int outstandingAmount;
 
+  int get dueCount => unpaid + overdue;
+
   factory BillingSummary.fromJson(Map<String, dynamic> json) {
     return BillingSummary(
       total: _intValue(json['total']),
@@ -168,7 +203,8 @@ class BillingSummary {
     );
   }
 
-  static int _intValue(Object? value) => int.tryParse(value?.toString() ?? '') ?? 0;
+  static int _intValue(Object? value) =>
+      int.tryParse(value?.toString() ?? '') ?? 0;
 }
 
 class Invoice {
@@ -206,6 +242,36 @@ class Invoice {
   }
 }
 
+class NewsItem {
+  const NewsItem({
+    required this.title,
+    required this.excerpt,
+    required this.categoryLabel,
+    required this.publishedAtLabel,
+  });
+
+  final String title;
+  final String excerpt;
+  final String categoryLabel;
+  final String publishedAtLabel;
+
+  factory NewsItem.fromJson(Map<String, dynamic> json) {
+    return NewsItem(
+      title: json['title']?.toString() ?? 'Informasi Tim-7 Net',
+      excerpt: json['excerpt']?.toString() ?? '',
+      categoryLabel: json['category_label']?.toString() ?? 'Umum',
+      publishedAtLabel: json['published_at_label']?.toString() ?? '-',
+    );
+  }
+}
+
+class DashboardData {
+  const DashboardData({required this.session, required this.news});
+
+  final CustomerSession session;
+  final List<NewsItem> news;
+}
+
 class SessionGate extends StatefulWidget {
   const SessionGate({super.key});
 
@@ -238,13 +304,21 @@ class _SessionGateState extends State<SessionGate> {
     }
 
     if (_customerNumber == null || _customerNumber!.isEmpty) {
-      return LoginPage(onLoggedIn: _saveSession);
+      return LandingPage(onLoginTap: _openLogin);
     }
 
-    return BillingPage(
+    return CustomerDashboardPage(
       customerNumber: _customerNumber!,
       onLogout: _logout,
     );
+  }
+
+  Future<void> _openLogin() async {
+    final customerNumber = await Navigator.of(
+      context,
+    ).push<String>(MaterialPageRoute(builder: (_) => const LoginPage()));
+    if (customerNumber == null || customerNumber.isEmpty) return;
+    await _saveSession(customerNumber);
   }
 
   Future<void> _saveSession(String customerNumber) async {
@@ -260,10 +334,211 @@ class _SessionGateState extends State<SessionGate> {
   }
 }
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key, required this.onLoggedIn});
+class LandingPage extends StatelessWidget {
+  const LandingPage({super.key, required this.onLoginTap});
 
-  final ValueChanged<String> onLoggedIn;
+  final VoidCallback onLoginTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          children: [
+            Row(
+              children: [
+                const BrandMark(size: 44),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Tim-7 Net',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                ),
+                TextButton(onPressed: onLoginTap, child: const Text('Login')),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF082F49),
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const StatusPill(
+                    label: 'Fiber Optik Lampung',
+                    color: Color(0xFF38BDF8),
+                    light: true,
+                  ),
+                  const SizedBox(height: 22),
+                  Text(
+                    'Internet cepat, stabil, dan siap menemani rumah Anda.',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      height: 1.12,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Nikmati koneksi tanpa batas dengan dukungan teknis responsif, paket terjangkau, dan portal pelanggan untuk pantau tagihan kapan saja.',
+                    style: TextStyle(color: Color(0xFFBAE6FD), height: 1.55),
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: onLoginTap,
+                    icon: const Icon(Icons.login_rounded),
+                    label: const Text('Masuk Portal Pelanggan'),
+                  ),
+                  const SizedBox(height: 22),
+                  const Row(
+                    children: [
+                      Expanded(
+                        child: LandingStat(value: '24/7', label: 'Support'),
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: LandingStat(value: '100+', label: 'Mbps'),
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: LandingStat(value: 'Fiber', label: 'Optik'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            const SectionTitle(title: 'Layanan Tim-7 Net'),
+            const SizedBox(height: 12),
+            const FeatureTile(
+              icon: Icons.speed_rounded,
+              title: 'Koneksi cepat dan stabil',
+              body:
+                  'Jaringan fiber optik untuk streaming, belajar, meeting, dan kebutuhan bisnis.',
+              color: Color(0xFF0284C7),
+            ),
+            const FeatureTile(
+              icon: Icons.payments_outlined,
+              title: 'Tagihan mudah dipantau',
+              body:
+                  'Pelanggan bisa melihat status tagihan langsung dari aplikasi mobile.',
+              color: Color(0xFFF97316),
+            ),
+            const FeatureTile(
+              icon: Icons.support_agent_rounded,
+              title: 'Bantuan pelanggan',
+              body:
+                  'Tim support siap membantu saat ada kendala layanan atau pertanyaan tagihan.',
+              color: Color(0xFF16A34A),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class LandingStat extends StatelessWidget {
+  const LandingStat({super.key, required this.value, required this.label});
+
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 18,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(color: Color(0xFFBAE6FD), fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class FeatureTile extends StatelessWidget {
+  const FeatureTile({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconBubble(icon: icon, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  body,
+                  style: const TextStyle(color: Color(0xFF64748B), height: 1.4),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -292,7 +567,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final session = await _api.login(_controller.text.trim());
-      widget.onLoggedIn(session.customer.customerNumber);
+      if (mounted) Navigator.of(context).pop(session.customer.customerNumber);
     } on ApiException catch (error) {
       setState(() => _error = error.message);
     } catch (_) {
@@ -305,39 +580,29 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('Login Pelanggan')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(22, 28, 22, 22),
+          padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
           children: [
-            const SizedBox(height: 24),
-            Center(
-              child: Container(
-                width: 76,
-                height: 76,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [
-                    BoxShadow(color: Color(0x1A0F172A), blurRadius: 24, offset: Offset(0, 12)),
-                  ],
-                ),
-                child: const Icon(Icons.wifi_rounded, size: 42, color: Color(0xFF0284C7)),
-              ),
-            ),
+            const SizedBox(height: 16),
+            const Center(child: BrandMark(size: 76)),
             const SizedBox(height: 26),
             Text(
               'Portal Pelanggan',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF111827),
-                  ),
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF111827),
+              ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Masuk untuk melihat tagihan dan status layanan Tim-7 Net.',
+              'Masuk untuk membuka dashboard, berita layanan, dan tagihan Tim-7 Net.',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFF64748B)),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF64748B)),
             ),
             const SizedBox(height: 34),
             Container(
@@ -354,7 +619,10 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     const Text(
                       'Nomor Pelanggan',
-                      style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF334155)),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF334155),
+                      ),
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
@@ -368,7 +636,9 @@ class _LoginPageState extends State<LoginPage> {
                         fillColor: const Color(0xFFF8FAFC),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFE2E8F0),
+                          ),
                         ),
                       ),
                       validator: (value) {
@@ -384,19 +654,20 @@ class _LoginPageState extends State<LoginPage> {
                       ErrorBanner(message: _error!),
                     ],
                     const SizedBox(height: 18),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: FilledButton.icon(
-                        onPressed: _submitting ? null : _submit,
-                        icon: _submitting
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Icon(Icons.arrow_forward_rounded),
-                        label: Text(_submitting ? 'Memeriksa...' : 'Masuk'),
+                    FilledButton.icon(
+                      onPressed: _submitting ? null : _submit,
+                      icon: _submitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.arrow_forward_rounded),
+                      label: Text(
+                        _submitting ? 'Memeriksa...' : 'Masuk Dashboard',
                       ),
                     ),
                   ],
@@ -416,8 +687,8 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-class BillingPage extends StatefulWidget {
-  const BillingPage({
+class CustomerDashboardPage extends StatefulWidget {
+  const CustomerDashboardPage({
     super.key,
     required this.customerNumber,
     required this.onLogout,
@@ -425,6 +696,508 @@ class BillingPage extends StatefulWidget {
 
   final String customerNumber;
   final VoidCallback onLogout;
+
+  @override
+  State<CustomerDashboardPage> createState() => _CustomerDashboardPageState();
+}
+
+class _CustomerDashboardPageState extends State<CustomerDashboardPage> {
+  final _api = const MobileApi();
+  late Future<DashboardData> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<DashboardData> _load() async {
+    final results = await Future.wait([
+      _api.invoices(widget.customerNumber),
+      _api.news(),
+    ]);
+
+    return DashboardData(
+      session: results[0] as CustomerSession,
+      news: results[1] as List<NewsItem>,
+    );
+  }
+
+  void _refresh() {
+    setState(() => _future = _load());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            tooltip: 'Muat ulang',
+            onPressed: _refresh,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+          IconButton(
+            tooltip: 'Keluar',
+            onPressed: widget.onLogout,
+            icon: const Icon(Icons.logout_rounded),
+          ),
+        ],
+      ),
+      body: FutureBuilder<DashboardData>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            final message = snapshot.error is ApiException
+                ? (snapshot.error as ApiException).message
+                : 'Tidak bisa memuat data.';
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ErrorBanner(message: message),
+                    const SizedBox(height: 14),
+                    FilledButton.icon(
+                      onPressed: _refresh,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Coba lagi'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final data = snapshot.data!;
+          return RefreshIndicator(
+            onRefresh: () async => _refresh(),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: [
+                WelcomeDashboardCard(session: data.session),
+                const SizedBox(height: 14),
+                ServiceInfoGrid(session: data.session),
+                const SizedBox(height: 20),
+                const SectionTitle(title: 'Informasi Terbaru'),
+                const SizedBox(height: 10),
+                if (data.news.isEmpty)
+                  const EmptyNews()
+                else
+                  ...data.news.map((item) => NewsTile(item: item)),
+                const SizedBox(height: 18),
+                BillingShortcutCard(
+                  session: data.session,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => BillingPage(
+                          initialSession: data.session,
+                          customerNumber: widget.customerNumber,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class WelcomeDashboardCard extends StatelessWidget {
+  const WelcomeDashboardCard({super.key, required this.session});
+
+  final CustomerSession session;
+
+  @override
+  Widget build(BuildContext context) {
+    final customer = session.customer;
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0369A1),
+        borderRadius: BorderRadius.circular(26),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  'Halo, ${customer.firstName}!',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const Icon(Icons.waving_hand_rounded, color: Color(0xFFFBBF24)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Selamat datang di Portal Pelanggan Tim-7 Net. Pantau layanan, baca pengumuman, dan cek tagihan dari satu dashboard.',
+            style: TextStyle(color: Color(0xFFE0F2FE), height: 1.5),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: MiniMetric(
+                  label: 'Tagihan aktif',
+                  value: '${session.summary.dueCount}',
+                  icon: Icons.receipt_long_outlined,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: MiniMetric(
+                  label: 'Outstanding',
+                  value: rupiah(session.summary.outstandingAmount),
+                  icon: Icons.account_balance_wallet_outlined,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class MiniMetric extends StatelessWidget {
+  const MiniMetric({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: const Color(0xFFBAE6FD), size: 20),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(color: Color(0xFFBAE6FD), fontSize: 11),
+          ),
+          const SizedBox(height: 3),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ServiceInfoGrid extends StatelessWidget {
+  const ServiceInfoGrid({super.key, required this.session});
+
+  final CustomerSession session;
+
+  @override
+  Widget build(BuildContext context) {
+    final customer = session.customer;
+    final isActive = customer.status.toLowerCase() == 'aktif';
+    return GridView.count(
+      crossAxisCount: 2,
+      childAspectRatio: 1.7,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      children: [
+        DashboardInfoCard(
+          label: 'Status',
+          value: customer.statusLabel,
+          icon: Icons.wifi_tethering_rounded,
+          color: isActive ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+        ),
+        DashboardInfoCard(
+          label: 'ID Pelanggan',
+          value: customer.customerNumber,
+          icon: Icons.badge_outlined,
+          color: const Color(0xFF0284C7),
+        ),
+        DashboardInfoCard(
+          label: 'Paket',
+          value: customer.packageName,
+          icon: Icons.router_outlined,
+          color: const Color(0xFF7C3AED),
+        ),
+        DashboardInfoCard(
+          label: 'Jadwal Tagihan',
+          value: 'Tgl ${customer.billingDate}',
+          icon: Icons.event_available_outlined,
+          color: const Color(0xFFF97316),
+        ),
+      ],
+    );
+  }
+}
+
+class DashboardInfoCard extends StatelessWidget {
+  const DashboardInfoCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 22),
+          const Spacer(),
+          Text(
+            label,
+            style: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xFF0F172A),
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class NewsTile extends StatelessWidget {
+  const NewsTile({super.key, required this.item});
+
+  final NewsItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const IconBubble(
+            icon: Icons.campaign_outlined,
+            color: Color(0xFF0284C7),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        item.categoryLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF0284C7),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      item.publishedAtLabel,
+                      style: const TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  item.title,
+                  style: const TextStyle(
+                    color: Color(0xFF0F172A),
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                if (item.excerpt.isNotEmpty) ...[
+                  const SizedBox(height: 5),
+                  Text(
+                    item.excerpt,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF64748B),
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class EmptyNews extends StatelessWidget {
+  const EmptyNews({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: const Row(
+        children: [
+          IconBubble(icon: Icons.newspaper_outlined, color: Color(0xFF94A3B8)),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Belum ada berita terbaru. Informasi layanan akan muncul di sini saat tersedia.',
+              style: TextStyle(color: Color(0xFF64748B)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class BillingShortcutCard extends StatelessWidget {
+  const BillingShortcutCard({
+    super.key,
+    required this.session,
+    required this.onTap,
+  });
+
+  final CustomerSession session;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const IconBubble(
+                icon: Icons.receipt_long_outlined,
+                color: Color(0xFFF97316),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Tagihan Pelanggan',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    Text(
+                      '${session.summary.dueCount} tagihan perlu perhatian',
+                      style: const TextStyle(color: Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            onPressed: onTap,
+            icon: const Icon(Icons.arrow_forward_rounded),
+            label: const Text('Lihat Tagihan'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class BillingPage extends StatefulWidget {
+  const BillingPage({
+    super.key,
+    required this.customerNumber,
+    this.initialSession,
+  });
+
+  final String customerNumber;
+  final CustomerSession? initialSession;
 
   @override
   State<BillingPage> createState() => _BillingPageState();
@@ -437,7 +1210,9 @@ class _BillingPageState extends State<BillingPage> {
   @override
   void initState() {
     super.initState();
-    _future = _api.invoices(widget.customerNumber);
+    _future = widget.initialSession != null
+        ? Future.value(widget.initialSession)
+        : _api.invoices(widget.customerNumber);
   }
 
   void _refresh() {
@@ -455,11 +1230,6 @@ class _BillingPageState extends State<BillingPage> {
             tooltip: 'Muat ulang',
             onPressed: _refresh,
             icon: const Icon(Icons.refresh_rounded),
-          ),
-          IconButton(
-            tooltip: 'Keluar',
-            onPressed: widget.onLogout,
-            icon: const Icon(Icons.logout_rounded),
           ),
         ],
       ),
@@ -503,18 +1273,14 @@ class _BillingPageState extends State<BillingPage> {
                 const SizedBox(height: 14),
                 SummaryRow(summary: session.summary),
                 const SizedBox(height: 20),
-                Text(
-                  'Riwayat Tagihan',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF111827),
-                      ),
-                ),
+                const SectionTitle(title: 'Riwayat Tagihan'),
                 const SizedBox(height: 10),
                 if (session.invoices.isEmpty)
                   const EmptyInvoices()
                 else
-                  ...session.invoices.map((invoice) => InvoiceTile(invoice: invoice)),
+                  ...session.invoices.map(
+                    (invoice) => InvoiceTile(invoice: invoice),
+                  ),
               ],
             ),
           );
@@ -549,22 +1315,36 @@ class HeaderCard extends StatelessWidget {
                 child: Text(
                   'Halo, ${customer.firstName}',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                      ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
               StatusPill(
                 label: customer.statusLabel,
-                color: isActive ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                color: isActive
+                    ? const Color(0xFF16A34A)
+                    : const Color(0xFFDC2626),
                 light: true,
               ),
             ],
           ),
           const SizedBox(height: 16),
-          InfoLine(icon: Icons.confirmation_number_outlined, label: 'ID', value: customer.customerNumber),
-          InfoLine(icon: Icons.router_outlined, label: 'Paket', value: customer.packageName),
-          InfoLine(icon: Icons.event_available_outlined, label: 'Tagihan', value: 'Setiap tanggal ${customer.billingDate}'),
+          InfoLine(
+            icon: Icons.confirmation_number_outlined,
+            label: 'ID',
+            value: customer.customerNumber,
+          ),
+          InfoLine(
+            icon: Icons.router_outlined,
+            label: 'Paket',
+            value: customer.packageName,
+          ),
+          InfoLine(
+            icon: Icons.event_available_outlined,
+            label: 'Tagihan',
+            value: 'Setiap tanggal ${customer.billingDate}',
+          ),
         ],
       ),
     );
@@ -591,13 +1371,22 @@ class InfoLine extends StatelessWidget {
         children: [
           Icon(icon, color: const Color(0xFFBAE6FD), size: 18),
           const SizedBox(width: 8),
-          Text('$label: ', style: const TextStyle(color: Color(0xFFE0F2FE), fontWeight: FontWeight.w600)),
+          Text(
+            '$label: ',
+            style: const TextStyle(
+              color: Color(0xFFE0F2FE),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           Expanded(
             child: Text(
               value,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -618,7 +1407,7 @@ class SummaryRow extends StatelessWidget {
         Expanded(
           child: SummaryCard(
             label: 'Belum dibayar',
-            value: '${summary.unpaid + summary.overdue}',
+            value: '${summary.dueCount}',
             icon: Icons.receipt_long_outlined,
             color: const Color(0xFFF59E0B),
           ),
@@ -666,14 +1455,21 @@ class SummaryCard extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 24),
           const Spacer(),
-          Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+          Text(
+            label,
+            style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+          ),
           const SizedBox(height: 3),
           FittedBox(
             alignment: Alignment.centerLeft,
             fit: BoxFit.scaleDown,
             child: Text(
               value,
-              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: Color(0xFF0F172A)),
+              style: const TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 20,
+                color: Color(0xFF0F172A),
+              ),
             ),
           ),
         ],
@@ -722,7 +1518,10 @@ class InvoiceTile extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(invoice.billingPeriodLabel, style: const TextStyle(color: Color(0xFF64748B))),
+                    Text(
+                      invoice.billingPeriodLabel,
+                      style: const TextStyle(color: Color(0xFF64748B)),
+                    ),
                   ],
                 ),
               ),
@@ -735,12 +1534,23 @@ class InvoiceTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   rupiah(invoice.amount),
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF111827)),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF111827),
+                  ),
                 ),
               ),
-              const Icon(Icons.schedule_outlined, size: 16, color: Color(0xFF94A3B8)),
+              const Icon(
+                Icons.schedule_outlined,
+                size: 16,
+                color: Color(0xFF94A3B8),
+              ),
               const SizedBox(width: 5),
-              Text(invoice.dueDateLabel, style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+              Text(
+                invoice.dueDateLabel,
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+              ),
             ],
           ),
           if ((invoice.paymentMethod ?? '').isNotEmpty) ...[
@@ -751,6 +1561,73 @@ class InvoiceTile extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class BrandMark extends StatelessWidget {
+  const BrandMark({super.key, required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(size * 0.26),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1A0F172A),
+            blurRadius: 24,
+            offset: Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Icon(
+        Icons.wifi_rounded,
+        size: size * 0.56,
+        color: const Color(0xFF0284C7),
+      ),
+    );
+  }
+}
+
+class IconBubble extends StatelessWidget {
+  const IconBubble({super.key, required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Icon(icon, color: color, size: 22),
+    );
+  }
+}
+
+class SectionTitle extends StatelessWidget {
+  const SectionTitle({super.key, required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.w900,
+        color: const Color(0xFF111827),
       ),
     );
   }
@@ -773,7 +1650,9 @@ class StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: light ? Colors.white.withValues(alpha: 0.18) : color.withValues(alpha: 0.12),
+        color: light
+            ? Colors.white.withValues(alpha: 0.18)
+            : color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -804,7 +1683,10 @@ class EmptyInvoices extends StatelessWidget {
         children: [
           Icon(Icons.receipt_long_outlined, size: 44, color: Color(0xFFCBD5E1)),
           SizedBox(height: 10),
-          Text('Belum ada riwayat tagihan.', style: TextStyle(color: Color(0xFF64748B))),
+          Text(
+            'Belum ada riwayat tagihan.',
+            style: TextStyle(color: Color(0xFF64748B)),
+          ),
         ],
       ),
     );
@@ -828,9 +1710,18 @@ class ErrorBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 18),
+          const Icon(
+            Icons.error_outline_rounded,
+            color: Color(0xFFDC2626),
+            size: 18,
+          ),
           const SizedBox(width: 8),
-          Expanded(child: Text(message, style: const TextStyle(color: Color(0xFFB91C1C)))),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: Color(0xFFB91C1C)),
+            ),
+          ),
         ],
       ),
     );

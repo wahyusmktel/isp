@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Models\News;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class MobileCustomerController extends Controller
 {
@@ -61,6 +63,37 @@ class MobileCustomerController extends Controller
             'customer' => $this->customerData($customer),
             'summary' => $this->invoiceSummary($customer),
             'invoices' => $this->invoiceQuery($customer)->take($limit)->get()->map(fn (Invoice $invoice) => $this->invoiceData($invoice))->values(),
+        ]);
+    }
+
+    public function news(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'limit' => ['nullable', 'integer', 'min:1', 'max:10'],
+        ]);
+
+        $limit = (int) ($validated['limit'] ?? 5);
+
+        $news = News::query()
+            ->where('status', 'published')
+            ->latest('published_at')
+            ->take($limit)
+            ->get()
+            ->map(fn (News $item) => [
+                'id' => $item->id,
+                'title' => $item->title,
+                'slug' => $item->slug,
+                'excerpt' => $item->excerpt ?: Str::limit(strip_tags($item->body), 120),
+                'category' => $item->category,
+                'category_label' => $item->category_label,
+                'published_at' => $item->published_at?->format('Y-m-d H:i:s'),
+                'published_at_label' => $item->published_at?->translatedFormat('d F Y') ?? '-',
+            ])
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'news' => $news,
         ]);
     }
 
