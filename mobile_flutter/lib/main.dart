@@ -1349,7 +1349,7 @@ class PeriodBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final parts = period.split('-');
     final date = DateTime(int.parse(parts[0]), int.parse(parts[1]));
-    final label = DateFormat('MMMM yyyy', 'id_ID').format(date);
+    final label = formatPeriodLabel(date);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -2692,6 +2692,25 @@ String rupiah(int amount) {
     symbol: 'Rp ',
     decimalDigits: 0,
   ).format(amount);
+}
+
+String formatPeriodLabel(DateTime date) {
+  const months = [
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
+  ];
+
+  return '${months[date.month - 1]} ${date.year}';
 }
 
 Color statusColorFor(String status) {
