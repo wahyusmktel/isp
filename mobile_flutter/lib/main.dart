@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   runApp(const Tim7NetApp());
@@ -100,6 +101,90 @@ class MobileApi {
     return ((json['news'] as List?) ?? const [])
         .map((item) => NewsItem.fromJson(item as Map<String, dynamic>))
         .toList();
+  }
+
+  Future<StaffSession> staffLogin(String email, String password) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/staff/login'),
+      headers: const {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'email': email, 'password': password}),
+    );
+
+    final json = _decode(response);
+    if (response.statusCode >= 400 || json['success'] != true) {
+      throw ApiException(
+          json['message']?.toString() ?? 'Login admin/operator gagal.');
+    }
+
+    return StaffSession.fromJson(json);
+  }
+
+  Future<StaffInvoiceResponse> staffInvoices(
+      String token, String period) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/staff/invoices').replace(
+      queryParameters: {
+        'period': period,
+        'limit': '100',
+      },
+    );
+    final response = await http.get(uri, headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    });
+
+    final json = _decode(response);
+    if (response.statusCode >= 400 || json['success'] != true) {
+      throw ApiException(
+          json['message']?.toString() ?? 'Gagal memuat tagihan.');
+    }
+
+    return StaffInvoiceResponse.fromJson(json);
+  }
+
+  Future<StaffInvoice> updateStaffInvoiceStatus(
+      String token, int invoiceId, String status) async {
+    final response = await http.patch(
+      Uri.parse('${ApiConfig.baseUrl}/staff/invoices/$invoiceId/status'),
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'status': status}),
+    );
+
+    final json = _decode(response);
+    if (response.statusCode >= 400 || json['success'] != true) {
+      throw ApiException(
+          json['message']?.toString() ?? 'Gagal mengubah status.');
+    }
+
+    return StaffInvoice.fromJson(json['invoice'] as Map<String, dynamic>);
+  }
+
+  Future<StaffInvoice> updateStaffPaymentMethod(
+      String token, int invoiceId, String paymentMethod) async {
+    final response = await http.patch(
+      Uri.parse(
+          '${ApiConfig.baseUrl}/staff/invoices/$invoiceId/payment-method'),
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'payment_method': paymentMethod}),
+    );
+
+    final json = _decode(response);
+    if (response.statusCode >= 400 || json['success'] != true) {
+      throw ApiException(
+          json['message']?.toString() ?? 'Gagal mengubah metode bayar.');
+    }
+
+    return StaffInvoice.fromJson(json['invoice'] as Map<String, dynamic>);
   }
 
   Map<String, dynamic> _decode(http.Response response) {
@@ -209,35 +294,158 @@ class BillingSummary {
 
 class Invoice {
   const Invoice({
+    required this.id,
     required this.invoiceNumber,
     required this.billingPeriodLabel,
     required this.amount,
     required this.status,
     required this.statusLabel,
     required this.dueDateLabel,
+    required this.pdfUrl,
     this.paymentMethod,
     this.notes,
   });
 
+  final int id;
   final String invoiceNumber;
   final String billingPeriodLabel;
   final int amount;
   final String status;
   final String statusLabel;
   final String dueDateLabel;
+  final String pdfUrl;
   final String? paymentMethod;
   final String? notes;
 
   factory Invoice.fromJson(Map<String, dynamic> json) {
     return Invoice(
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
       invoiceNumber: json['invoice_number']?.toString() ?? '-',
       billingPeriodLabel: json['billing_period_label']?.toString() ?? '-',
       amount: int.tryParse(json['amount']?.toString() ?? '') ?? 0,
       status: json['status']?.toString() ?? 'unpaid',
       statusLabel: json['status_label']?.toString() ?? 'Belum Dibayar',
       dueDateLabel: json['due_date_label']?.toString() ?? '-',
+      pdfUrl: json['pdf_url']?.toString() ?? '',
       paymentMethod: json['payment_method']?.toString(),
       notes: json['notes']?.toString(),
+    );
+  }
+}
+
+class StaffSession {
+  const StaffSession({
+    required this.token,
+    required this.name,
+    required this.email,
+    required this.role,
+  });
+
+  final String token;
+  final String name;
+  final String email;
+  final String role;
+
+  factory StaffSession.fromJson(Map<String, dynamic> json) {
+    final user = json['user'] as Map<String, dynamic>;
+    return StaffSession(
+      token: json['token']?.toString() ?? '',
+      name: user['name']?.toString() ?? 'Staff',
+      email: user['email']?.toString() ?? '',
+      role: user['role']?.toString() ?? 'operator',
+    );
+  }
+}
+
+class StaffInvoiceResponse {
+  const StaffInvoiceResponse({
+    required this.period,
+    required this.stats,
+    required this.invoices,
+  });
+
+  final String period;
+  final StaffInvoiceStats stats;
+  final List<StaffInvoice> invoices;
+
+  factory StaffInvoiceResponse.fromJson(Map<String, dynamic> json) {
+    return StaffInvoiceResponse(
+      period: json['period']?.toString() ?? '',
+      stats: StaffInvoiceStats.fromJson(
+          (json['stats'] as Map?)?.cast<String, dynamic>() ?? const {}),
+      invoices: ((json['invoices'] as List?) ?? const [])
+          .map((item) => StaffInvoice.fromJson(item as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class StaffInvoiceStats {
+  const StaffInvoiceStats({
+    required this.total,
+    required this.unpaid,
+    required this.paid,
+    required this.overdue,
+    required this.cancelled,
+  });
+
+  final int total;
+  final int unpaid;
+  final int paid;
+  final int overdue;
+  final int cancelled;
+
+  factory StaffInvoiceStats.fromJson(Map<String, dynamic> json) {
+    return StaffInvoiceStats(
+      total: BillingSummary._intValue(json['total']),
+      unpaid: BillingSummary._intValue(json['unpaid']),
+      paid: BillingSummary._intValue(json['paid']),
+      overdue: BillingSummary._intValue(json['overdue']),
+      cancelled: BillingSummary._intValue(json['cancelled']),
+    );
+  }
+}
+
+class StaffInvoice {
+  const StaffInvoice({
+    required this.id,
+    required this.invoiceNumber,
+    required this.customerName,
+    required this.customerNumber,
+    required this.billingPeriodLabel,
+    required this.amount,
+    required this.status,
+    required this.statusLabel,
+    required this.dueDateLabel,
+    required this.paymentMethod,
+    required this.pdfUrl,
+  });
+
+  final int id;
+  final String invoiceNumber;
+  final String customerName;
+  final String customerNumber;
+  final String billingPeriodLabel;
+  final int amount;
+  final String status;
+  final String statusLabel;
+  final String dueDateLabel;
+  final String paymentMethod;
+  final String pdfUrl;
+
+  factory StaffInvoice.fromJson(Map<String, dynamic> json) {
+    return StaffInvoice(
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      invoiceNumber: json['invoice_number']?.toString() ?? '-',
+      customerName: json['customer_name']?.toString() ?? '-',
+      customerNumber: json['customer_number']?.toString() ?? '-',
+      billingPeriodLabel: json['billing_period_label']?.toString() ?? '-',
+      amount: int.tryParse(json['amount']?.toString() ?? '') ?? 0,
+      status: json['status']?.toString() ?? 'unpaid',
+      statusLabel: json['status_label']?.toString() ?? 'Belum Dibayar',
+      dueDateLabel: json['due_date_label']?.toString() ?? '-',
+      paymentMethod: json['payment_method']?.toString() ?? '',
+      pdfUrl: json['pdf_url']?.toString() ?? '',
     );
   }
 }
@@ -281,6 +489,7 @@ class SessionGate extends StatefulWidget {
 
 class _SessionGateState extends State<SessionGate> {
   String? _customerNumber;
+  StaffSession? _staffSession;
   bool _loading = true;
 
   @override
@@ -291,8 +500,17 @@ class _SessionGateState extends State<SessionGate> {
 
   Future<void> _restore() async {
     final prefs = await SharedPreferences.getInstance();
+    final staffToken = prefs.getString('staff_token');
     setState(() {
       _customerNumber = prefs.getString('customer_number');
+      if (staffToken != null && staffToken.isNotEmpty) {
+        _staffSession = StaffSession(
+          token: staffToken,
+          name: prefs.getString('staff_name') ?? 'Staff',
+          email: prefs.getString('staff_email') ?? '',
+          role: prefs.getString('staff_role') ?? 'operator',
+        );
+      }
       _loading = false;
     });
   }
@@ -303,8 +521,19 @@ class _SessionGateState extends State<SessionGate> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    if (_customerNumber == null || _customerNumber!.isEmpty) {
-      return LandingPage(onLoginTap: _openLogin);
+    if ((_customerNumber == null || _customerNumber!.isEmpty) &&
+        _staffSession == null) {
+      return LandingPage(
+        onLoginTap: _openLogin,
+        onStaffLoginTap: _openStaffLogin,
+      );
+    }
+
+    if (_staffSession != null) {
+      return StaffInvoicesPage(
+        session: _staffSession!,
+        onLogout: _logout,
+      );
     }
 
     return CustomerDashboardPage(
@@ -321,23 +550,63 @@ class _SessionGateState extends State<SessionGate> {
     await _saveSession(customerNumber);
   }
 
+  Future<void> _openStaffLogin() async {
+    final session = await Navigator.of(context).push<StaffSession>(
+      MaterialPageRoute(builder: (_) => const StaffLoginPage()),
+    );
+    if (session == null || session.token.isEmpty) return;
+    await _saveStaffSession(session);
+  }
+
   Future<void> _saveSession(String customerNumber) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('customer_number', customerNumber);
-    setState(() => _customerNumber = customerNumber);
+    await prefs.remove('staff_token');
+    await prefs.remove('staff_name');
+    await prefs.remove('staff_email');
+    await prefs.remove('staff_role');
+    setState(() {
+      _customerNumber = customerNumber;
+      _staffSession = null;
+    });
+  }
+
+  Future<void> _saveStaffSession(StaffSession session) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('staff_token', session.token);
+    await prefs.setString('staff_name', session.name);
+    await prefs.setString('staff_email', session.email);
+    await prefs.setString('staff_role', session.role);
+    await prefs.remove('customer_number');
+    setState(() {
+      _customerNumber = null;
+      _staffSession = session;
+    });
   }
 
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('customer_number');
-    setState(() => _customerNumber = null);
+    await prefs.remove('staff_token');
+    await prefs.remove('staff_name');
+    await prefs.remove('staff_email');
+    await prefs.remove('staff_role');
+    setState(() {
+      _customerNumber = null;
+      _staffSession = null;
+    });
   }
 }
 
 class LandingPage extends StatelessWidget {
-  const LandingPage({super.key, required this.onLoginTap});
+  const LandingPage({
+    super.key,
+    required this.onLoginTap,
+    required this.onStaffLoginTap,
+  });
 
   final VoidCallback onLoginTap;
+  final VoidCallback onStaffLoginTap;
 
   @override
   Widget build(BuildContext context) {
@@ -382,10 +651,10 @@ class LandingPage extends StatelessWidget {
                   Text(
                     'Internet cepat, stabil, dan siap menemani rumah Anda.',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      height: 1.12,
-                    ),
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          height: 1.12,
+                        ),
                   ),
                   const SizedBox(height: 12),
                   const Text(
@@ -397,6 +666,19 @@ class LandingPage extends StatelessWidget {
                     onPressed: onLoginTap,
                     icon: const Icon(Icons.login_rounded),
                     label: const Text('Masuk Portal Pelanggan'),
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: onStaffLoginTap,
+                    icon: const Icon(Icons.admin_panel_settings_outlined),
+                    label: const Text('Login Admin / Operator'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFF7DD3FC)),
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
                   ),
                   const SizedBox(height: 22),
                   const Row(
@@ -592,9 +874,9 @@ class _LoginPageState extends State<LoginPage> {
               'Portal Pelanggan',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF111827),
-              ),
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF111827),
+                  ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -686,6 +968,671 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
+
+class StaffLoginPage extends StatefulWidget {
+  const StaffLoginPage({super.key});
+
+  @override
+  State<StaffLoginPage> createState() => _StaffLoginPageState();
+}
+
+class _StaffLoginPageState extends State<StaffLoginPage> {
+  final _api = const MobileApi();
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _submitting = false;
+  bool _obscure = true;
+  String? _error;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+
+    try {
+      final session = await _api.staffLogin(
+        _emailController.text.trim(),
+        _passwordController.text,
+      );
+      if (mounted) Navigator.of(context).pop(session);
+    } on ApiException catch (error) {
+      setState(() => _error = error.message);
+    } catch (_) {
+      setState(() => _error = 'Tidak bisa terhubung ke server.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Login Admin / Operator')),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+          children: [
+            const Center(child: BrandMark(size: 72)),
+            const SizedBox(height: 24),
+            Text(
+              'Area Staff',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF111827),
+                  ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Masuk sebagai admin atau operator untuk mengelola tagihan pelanggan.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 28),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Email wajib diisi.';
+                        }
+                        if (!value.contains('@')) {
+                          return 'Format email tidak valid.';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: _obscure,
+                      textInputAction: TextInputAction.done,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        prefixIcon: const Icon(Icons.lock_outline_rounded),
+                        suffixIcon: IconButton(
+                          onPressed: () => setState(() => _obscure = !_obscure),
+                          icon: Icon(_obscure
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Password wajib diisi.';
+                        }
+                        return null;
+                      },
+                      onFieldSubmitted: (_) => _submit(),
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 14),
+                      ErrorBanner(message: _error!),
+                    ],
+                    const SizedBox(height: 18),
+                    FilledButton.icon(
+                      onPressed: _submitting ? null : _submit,
+                      icon: _submitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.login_rounded),
+                      label: Text(
+                          _submitting ? 'Memeriksa...' : 'Masuk Area Staff'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class StaffInvoicesPage extends StatefulWidget {
+  const StaffInvoicesPage({
+    super.key,
+    required this.session,
+    required this.onLogout,
+  });
+
+  final StaffSession session;
+  final VoidCallback onLogout;
+
+  @override
+  State<StaffInvoicesPage> createState() => _StaffInvoicesPageState();
+}
+
+class _StaffInvoicesPageState extends State<StaffInvoicesPage> {
+  final _api = const MobileApi();
+  late Future<StaffInvoiceResponse> _future;
+  late String _period;
+  String _filter = 'all';
+
+  @override
+  void initState() {
+    super.initState();
+    _period = DateFormat('yyyy-MM').format(DateTime.now());
+    _future = _api.staffInvoices(widget.session.token, _period);
+  }
+
+  void _refresh() {
+    setState(() => _future = _api.staffInvoices(widget.session.token, _period));
+  }
+
+  void _movePeriod(int delta) {
+    final parts = _period.split('-');
+    final current = DateTime(int.parse(parts[0]), int.parse(parts[1]));
+    final next = DateTime(current.year, current.month + delta);
+    setState(() {
+      _period = DateFormat('yyyy-MM').format(next);
+      _future = _api.staffInvoices(widget.session.token, _period);
+    });
+  }
+
+  Future<void> _updateStatus(StaffInvoice invoice, String status) async {
+    try {
+      await _api.updateStaffInvoiceStatus(
+          widget.session.token, invoice.id, status);
+      _refresh();
+      if (mounted) showSnack(context, 'Status tagihan berhasil diperbarui.');
+    } on ApiException catch (error) {
+      if (mounted) showSnack(context, error.message);
+    } catch (_) {
+      if (mounted) showSnack(context, 'Tidak bisa terhubung ke server.');
+    }
+  }
+
+  Future<void> _updatePaymentMethod(StaffInvoice invoice, String method) async {
+    try {
+      await _api.updateStaffPaymentMethod(
+          widget.session.token, invoice.id, method);
+      _refresh();
+      if (mounted) showSnack(context, 'Metode bayar berhasil diperbarui.');
+    } on ApiException catch (error) {
+      if (mounted) showSnack(context, error.message);
+    } catch (_) {
+      if (mounted) showSnack(context, 'Tidak bisa terhubung ke server.');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Tagihan Staff'),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            tooltip: 'Muat ulang',
+            onPressed: _refresh,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+          IconButton(
+            tooltip: 'Keluar',
+            onPressed: widget.onLogout,
+            icon: const Icon(Icons.logout_rounded),
+          ),
+        ],
+      ),
+      body: FutureBuilder<StaffInvoiceResponse>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            final message = snapshot.error is ApiException
+                ? (snapshot.error as ApiException).message
+                : 'Tidak bisa memuat data.';
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ErrorBanner(message: message),
+                    const SizedBox(height: 14),
+                    FilledButton.icon(
+                      onPressed: _refresh,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Coba lagi'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final data = snapshot.data!;
+          final invoices = _filter == 'all'
+              ? data.invoices
+              : data.invoices.where((item) => item.status == _filter).toList();
+
+          return RefreshIndicator(
+            onRefresh: () async => _refresh(),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: [
+                StaffHeaderCard(session: widget.session),
+                const SizedBox(height: 12),
+                PeriodBar(
+                  period: _period,
+                  onPrevious: () => _movePeriod(-1),
+                  onNext: () => _movePeriod(1),
+                ),
+                const SizedBox(height: 12),
+                StaffStatsRow(stats: data.stats),
+                const SizedBox(height: 14),
+                StatusFilterChips(
+                  selected: _filter,
+                  onChanged: (value) => setState(() => _filter = value),
+                  stats: data.stats,
+                ),
+                const SizedBox(height: 14),
+                if (invoices.isEmpty)
+                  const EmptyInvoices()
+                else
+                  ...invoices.map(
+                    (invoice) => StaffInvoiceTile(
+                      invoice: invoice,
+                      onStatusChanged: (status) =>
+                          _updateStatus(invoice, status),
+                      onPaymentMethodChanged: (method) =>
+                          _updatePaymentMethod(invoice, method),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class StaffHeaderCard extends StatelessWidget {
+  const StaffHeaderCard({super.key, required this.session});
+
+  final StaffSession session;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: [
+          const IconBubble(
+              icon: Icons.admin_panel_settings_outlined,
+              color: Color(0xFF38BDF8)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  session.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  session.role.toUpperCase(),
+                  style: const TextStyle(
+                      color: Color(0xFFBAE6FD),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PeriodBar extends StatelessWidget {
+  const PeriodBar({
+    super.key,
+    required this.period,
+    required this.onPrevious,
+    required this.onNext,
+  });
+
+  final String period;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = period.split('-');
+    final date = DateTime(int.parse(parts[0]), int.parse(parts[1]));
+    final label = DateFormat('MMMM yyyy', 'id_ID').format(date);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: onPrevious,
+            icon: const Icon(Icons.chevron_left_rounded),
+            tooltip: 'Periode sebelumnya',
+          ),
+          Expanded(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+            ),
+          ),
+          IconButton(
+            onPressed: onNext,
+            icon: const Icon(Icons.chevron_right_rounded),
+            tooltip: 'Periode berikutnya',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class StaffStatsRow extends StatelessWidget {
+  const StaffStatsRow({super.key, required this.stats});
+
+  final StaffInvoiceStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+            child: CompactStatCard(
+                label: 'Total',
+                value: '${stats.total}',
+                color: const Color(0xFF0284C7))),
+        const SizedBox(width: 8),
+        Expanded(
+            child: CompactStatCard(
+                label: 'Lunas',
+                value: '${stats.paid}',
+                color: const Color(0xFF16A34A))),
+        const SizedBox(width: 8),
+        Expanded(
+            child: CompactStatCard(
+                label: 'Belum',
+                value: '${stats.unpaid}',
+                color: const Color(0xFFF59E0B))),
+        const SizedBox(width: 8),
+        Expanded(
+            child: CompactStatCard(
+                label: 'Tempo',
+                value: '${stats.overdue}',
+                color: const Color(0xFFDC2626))),
+      ],
+    );
+  }
+}
+
+class CompactStatCard extends StatelessWidget {
+  const CompactStatCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 78,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(value,
+              style: TextStyle(
+                  color: color, fontSize: 20, fontWeight: FontWeight.w900)),
+          const Spacer(),
+          Text(label,
+              style: const TextStyle(color: Color(0xFF64748B), fontSize: 11)),
+        ],
+      ),
+    );
+  }
+}
+
+class StatusFilterChips extends StatelessWidget {
+  const StatusFilterChips({
+    super.key,
+    required this.selected,
+    required this.onChanged,
+    required this.stats,
+  });
+
+  final String selected;
+  final ValueChanged<String> onChanged;
+  final StaffInvoiceStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      ('all', 'Semua', stats.total),
+      ('unpaid', 'Belum Dibayar', stats.unpaid),
+      ('paid', 'Lunas', stats.paid),
+      ('overdue', 'Jatuh Tempo', stats.overdue),
+      ('cancelled', 'Batal', stats.cancelled),
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: items.map((item) {
+          final isSelected = selected == item.$1;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              selected: isSelected,
+              label: Text('${item.$2} ${item.$3}'),
+              onSelected: (_) => onChanged(item.$1),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class StaffInvoiceTile extends StatelessWidget {
+  const StaffInvoiceTile({
+    super.key,
+    required this.invoice,
+    required this.onStatusChanged,
+    required this.onPaymentMethodChanged,
+  });
+
+  final StaffInvoice invoice;
+  final ValueChanged<String> onStatusChanged;
+  final ValueChanged<String> onPaymentMethodChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = statusColorFor(invoice.status);
+    final paymentValue = paymentMethods.contains(invoice.paymentMethod)
+        ? invoice.paymentMethod
+        : paymentMethods.first;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(invoice.invoiceNumber,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF0F172A))),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${invoice.customerName} (${invoice.customerNumber})',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
+              ),
+              StatusPill(label: invoice.statusLabel, color: statusColor),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  rupiah(invoice.amount),
+                  style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF111827)),
+                ),
+              ),
+              Text(invoice.billingPeriodLabel,
+                  style:
+                      const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: invoice.status,
+            decoration: const InputDecoration(
+              labelText: 'Status Pembayaran',
+              prefixIcon: Icon(Icons.verified_outlined),
+            ),
+            items: const [
+              DropdownMenuItem(value: 'unpaid', child: Text('Belum Dibayar')),
+              DropdownMenuItem(value: 'paid', child: Text('Lunas')),
+              DropdownMenuItem(value: 'overdue', child: Text('Jatuh Tempo')),
+              DropdownMenuItem(value: 'cancelled', child: Text('Dibatalkan')),
+            ],
+            onChanged: (value) {
+              if (value != null && value != invoice.status) {
+                onStatusChanged(value);
+              }
+            },
+          ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            initialValue: paymentValue,
+            decoration: const InputDecoration(
+              labelText: 'Metode Bayar',
+              prefixIcon: Icon(Icons.payments_outlined),
+            ),
+            items: paymentMethods
+                .map((method) =>
+                    DropdownMenuItem(value: method, child: Text(method)))
+                .toList(),
+            onChanged: (value) {
+              if (value != null && value != invoice.paymentMethod) {
+                onPaymentMethodChanged(value);
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(Icons.schedule_outlined,
+                  size: 16, color: Color(0xFF94A3B8)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text('Jatuh tempo ${invoice.dueDateLabel}',
+                    style: const TextStyle(
+                        color: Color(0xFF64748B), fontSize: 12)),
+              ),
+              TextButton.icon(
+                onPressed: invoice.pdfUrl.isEmpty
+                    ? null
+                    : () => openExternalUrl(context, invoice.pdfUrl),
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                label: const Text('PDF'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+const paymentMethods = ['Transfer Bank', 'Tunai', 'QRIS', 'E-Wallet'];
 
 class CustomerDashboardPage extends StatefulWidget {
   const CustomerDashboardPage({
@@ -839,9 +1786,9 @@ class WelcomeDashboardCard extends StatelessWidget {
                 child: Text(
                   'Halo, ${customer.firstName}!',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                  ),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                      ),
                 ),
               ),
               const Icon(Icons.waving_hand_rounded, color: Color(0xFFFBBF24)),
@@ -1315,9 +2262,9 @@ class HeaderCard extends StatelessWidget {
                 child: Text(
                   'Halo, ${customer.firstName}',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                  ),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                      ),
                 ),
               ),
               StatusPill(
@@ -1560,6 +2507,17 @@ class InvoiceTile extends StatelessWidget {
               style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
             ),
           ],
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: invoice.pdfUrl.isEmpty
+                  ? null
+                  : () => openExternalUrl(context, invoice.pdfUrl),
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              label: const Text('Cetak PDF'),
+            ),
+          ),
         ],
       ),
     );
@@ -1626,9 +2584,9 @@ class SectionTitle extends StatelessWidget {
     return Text(
       title,
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.w900,
-        color: const Color(0xFF111827),
-      ),
+            fontWeight: FontWeight.w900,
+            color: const Color(0xFF111827),
+          ),
     );
   }
 }
@@ -1734,4 +2692,30 @@ String rupiah(int amount) {
     symbol: 'Rp ',
     decimalDigits: 0,
   ).format(amount);
+}
+
+Color statusColorFor(String status) {
+  return switch (status) {
+    'paid' => const Color(0xFF16A34A),
+    'overdue' => const Color(0xFFDC2626),
+    'cancelled' => const Color(0xFF64748B),
+    _ => const Color(0xFFF59E0B),
+  };
+}
+
+Future<void> openExternalUrl(BuildContext context, String url) async {
+  final uri = Uri.tryParse(url);
+  if (uri == null) {
+    showSnack(context, 'URL PDF tidak valid.');
+    return;
+  }
+
+  final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  if (!opened && context.mounted) {
+    showSnack(context, 'Tidak bisa membuka PDF.');
+  }
+}
+
+void showSnack(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
