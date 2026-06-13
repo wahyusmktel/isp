@@ -122,6 +122,25 @@ class MobileApi {
     return StaffSession.fromJson(json);
   }
 
+  Future<StaffDashboardData> staffDashboard(String token) async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/staff/dashboard'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    final json = _decode(response);
+    if (response.statusCode >= 400 || json['success'] != true) {
+      throw ApiException(
+        json['message']?.toString() ?? 'Gagal memuat dashboard.',
+      );
+    }
+
+    return StaffDashboardData.fromJson(json);
+  }
+
   Future<StaffInvoiceResponse> staffInvoices(
       String token, String period) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/staff/invoices').replace(
@@ -357,6 +376,248 @@ class StaffSession {
   }
 }
 
+class StaffDashboardData {
+  const StaffDashboardData({
+    required this.summary,
+    required this.revenueChart,
+    required this.packageDistribution,
+    required this.invoiceStatus,
+    required this.upcomingDue,
+    required this.network,
+    required this.latestCustomers,
+  });
+
+  final StaffDashboardSummary summary;
+  final List<RevenuePoint> revenueChart;
+  final List<PackageDistributionItem> packageDistribution;
+  final InvoiceStatusSummary invoiceStatus;
+  final List<UpcomingDueItem> upcomingDue;
+  final NetworkSummary network;
+  final List<LatestCustomerItem> latestCustomers;
+
+  factory StaffDashboardData.fromJson(Map<String, dynamic> json) {
+    return StaffDashboardData(
+      summary: StaffDashboardSummary.fromJson(
+        (json['summary'] as Map?)?.cast<String, dynamic>() ?? const {},
+      ),
+      revenueChart: ((json['revenue_chart'] as List?) ?? const [])
+          .map((item) => RevenuePoint.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      packageDistribution: ((json['package_distribution'] as List?) ?? const [])
+          .map((item) =>
+              PackageDistributionItem.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      invoiceStatus: InvoiceStatusSummary.fromJson(
+        (json['invoice_status'] as Map?)?.cast<String, dynamic>() ?? const {},
+      ),
+      upcomingDue: ((json['upcoming_due'] as List?) ?? const [])
+          .map((item) => UpcomingDueItem.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      network: NetworkSummary.fromJson(
+        (json['network'] as Map?)?.cast<String, dynamic>() ?? const {},
+      ),
+      latestCustomers: ((json['latest_customers'] as List?) ?? const [])
+          .map((item) =>
+              LatestCustomerItem.fromJson(item as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class StaffDashboardSummary {
+  const StaffDashboardSummary({
+    required this.totalCustomers,
+    required this.activeCustomers,
+    required this.newCustomersThisMonth,
+    required this.revenueThisMonth,
+    required this.paidInvoicesThisMonth,
+    required this.overdueInvoices,
+    required this.unpaidInvoices,
+    required this.onlineRouters,
+    required this.totalRouters,
+    required this.totalPppoe,
+    required this.mappedCustomers,
+  });
+
+  final int totalCustomers;
+  final int activeCustomers;
+  final int newCustomersThisMonth;
+  final int revenueThisMonth;
+  final int paidInvoicesThisMonth;
+  final int overdueInvoices;
+  final int unpaidInvoices;
+  final int onlineRouters;
+  final int totalRouters;
+  final int totalPppoe;
+  final int mappedCustomers;
+
+  factory StaffDashboardSummary.fromJson(Map<String, dynamic> json) {
+    return StaffDashboardSummary(
+      totalCustomers: intValue(json['total_customers']),
+      activeCustomers: intValue(json['active_customers']),
+      newCustomersThisMonth: intValue(json['new_customers_this_month']),
+      revenueThisMonth: intValue(json['revenue_this_month']),
+      paidInvoicesThisMonth: intValue(json['paid_invoices_this_month']),
+      overdueInvoices: intValue(json['overdue_invoices']),
+      unpaidInvoices: intValue(json['unpaid_invoices']),
+      onlineRouters: intValue(json['online_routers']),
+      totalRouters: intValue(json['total_routers']),
+      totalPppoe: intValue(json['total_pppoe']),
+      mappedCustomers: intValue(json['mapped_customers']),
+    );
+  }
+}
+
+class RevenuePoint {
+  const RevenuePoint({
+    required this.month,
+    required this.value,
+    required this.label,
+  });
+
+  final String month;
+  final int value;
+  final String label;
+
+  factory RevenuePoint.fromJson(Map<String, dynamic> json) {
+    return RevenuePoint(
+      month: json['month']?.toString() ?? '-',
+      value: intValue(json['value']),
+      label: json['label']?.toString() ?? '-',
+    );
+  }
+}
+
+class PackageDistributionItem {
+  const PackageDistributionItem({
+    required this.name,
+    required this.total,
+    required this.percentage,
+  });
+
+  final String name;
+  final int total;
+  final int percentage;
+
+  factory PackageDistributionItem.fromJson(Map<String, dynamic> json) {
+    return PackageDistributionItem(
+      name: json['name']?.toString() ?? '-',
+      total: intValue(json['total']),
+      percentage: intValue(json['percentage']),
+    );
+  }
+}
+
+class InvoiceStatusSummary {
+  const InvoiceStatusSummary({
+    required this.total,
+    required this.paid,
+    required this.unpaid,
+    required this.overdue,
+    required this.cancelled,
+  });
+
+  final int total;
+  final int paid;
+  final int unpaid;
+  final int overdue;
+  final int cancelled;
+
+  factory InvoiceStatusSummary.fromJson(Map<String, dynamic> json) {
+    return InvoiceStatusSummary(
+      total: intValue(json['total']),
+      paid: intValue(json['paid']),
+      unpaid: intValue(json['unpaid']),
+      overdue: intValue(json['overdue']),
+      cancelled: intValue(json['cancelled']),
+    );
+  }
+}
+
+class UpcomingDueItem {
+  const UpcomingDueItem({
+    required this.customerName,
+    required this.packageName,
+    required this.amount,
+    required this.dueLabel,
+    required this.days,
+    required this.status,
+  });
+
+  final String customerName;
+  final String packageName;
+  final int amount;
+  final String dueLabel;
+  final int days;
+  final String status;
+
+  factory UpcomingDueItem.fromJson(Map<String, dynamic> json) {
+    return UpcomingDueItem(
+      customerName: json['customer_name']?.toString() ?? '-',
+      packageName: json['package_name']?.toString() ?? '-',
+      amount: intValue(json['amount']),
+      dueLabel: json['due_label']?.toString() ?? '-',
+      days: intValue(json['days']),
+      status: json['status']?.toString() ?? 'unpaid',
+    );
+  }
+}
+
+class NetworkSummary {
+  const NetworkSummary({
+    required this.totalRouters,
+    required this.onlineRouters,
+    required this.totalPppoe,
+    required this.mappedCustomers,
+    required this.uptimePercentage,
+  });
+
+  final int totalRouters;
+  final int onlineRouters;
+  final int totalPppoe;
+  final int mappedCustomers;
+  final int uptimePercentage;
+
+  factory NetworkSummary.fromJson(Map<String, dynamic> json) {
+    return NetworkSummary(
+      totalRouters: intValue(json['total_routers']),
+      onlineRouters: intValue(json['online_routers']),
+      totalPppoe: intValue(json['total_pppoe']),
+      mappedCustomers: intValue(json['mapped_customers']),
+      uptimePercentage: intValue(json['uptime_percentage']),
+    );
+  }
+}
+
+class LatestCustomerItem {
+  const LatestCustomerItem({
+    required this.name,
+    required this.phone,
+    required this.packageName,
+    required this.joinDateLabel,
+    required this.status,
+    required this.statusLabel,
+  });
+
+  final String name;
+  final String phone;
+  final String packageName;
+  final String joinDateLabel;
+  final String status;
+  final String statusLabel;
+
+  factory LatestCustomerItem.fromJson(Map<String, dynamic> json) {
+    return LatestCustomerItem(
+      name: json['name']?.toString() ?? '-',
+      phone: json['phone']?.toString() ?? '-',
+      packageName: json['package_name']?.toString() ?? '-',
+      joinDateLabel: json['join_date_label']?.toString() ?? '-',
+      status: json['status']?.toString() ?? 'aktif',
+      statusLabel: json['status_label']?.toString() ?? 'Aktif',
+    );
+  }
+}
+
 class StaffInvoiceResponse {
   const StaffInvoiceResponse({
     required this.period,
@@ -530,7 +791,7 @@ class _SessionGateState extends State<SessionGate> {
     }
 
     if (_staffSession != null) {
-      return StaffInvoicesPage(
+      return StaffDashboardPage(
         session: _staffSession!,
         onLogout: _logout,
       );
@@ -1121,8 +1382,8 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
   }
 }
 
-class StaffInvoicesPage extends StatefulWidget {
-  const StaffInvoicesPage({
+class StaffDashboardPage extends StatefulWidget {
+  const StaffDashboardPage({
     super.key,
     required this.session,
     required this.onLogout,
@@ -1130,6 +1391,775 @@ class StaffInvoicesPage extends StatefulWidget {
 
   final StaffSession session;
   final VoidCallback onLogout;
+
+  @override
+  State<StaffDashboardPage> createState() => _StaffDashboardPageState();
+}
+
+class _StaffDashboardPageState extends State<StaffDashboardPage> {
+  final _api = const MobileApi();
+  late Future<StaffDashboardData> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _api.staffDashboard(widget.session.token);
+  }
+
+  void _refresh() {
+    setState(() => _future = _api.staffDashboard(widget.session.token));
+  }
+
+  void _openInvoices() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StaffInvoicesPage(session: widget.session),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Dashboard Staff'),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            tooltip: 'Muat ulang',
+            onPressed: _refresh,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
+      ),
+      body: FutureBuilder<StaffDashboardData>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            final message = snapshot.error is ApiException
+                ? (snapshot.error as ApiException).message
+                : 'Tidak bisa memuat dashboard.';
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ErrorBanner(message: message),
+                    const SizedBox(height: 14),
+                    FilledButton.icon(
+                      onPressed: _refresh,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Coba lagi'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final data = snapshot.data!;
+          return RefreshIndicator(
+            onRefresh: () async => _refresh(),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: [
+                StaffDashboardHero(session: widget.session),
+                const SizedBox(height: 14),
+                DashboardKpiGrid(summary: data.summary),
+                const SizedBox(height: 16),
+                QuickInvoiceAction(onTap: _openInvoices),
+                const SizedBox(height: 16),
+                RevenueChartCard(points: data.revenueChart),
+                const SizedBox(height: 16),
+                PackageDistributionCard(items: data.packageDistribution),
+                const SizedBox(height: 16),
+                InvoiceStatusCard(status: data.invoiceStatus),
+                const SizedBox(height: 16),
+                UpcomingDueCard(
+                    items: data.upcomingDue, onViewAll: _openInvoices),
+                const SizedBox(height: 16),
+                NetworkCard(network: data.network),
+                const SizedBox(height: 16),
+                LatestCustomersCard(customers: data.latestCustomers),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class StaffDashboardHero extends StatelessWidget {
+  const StaffDashboardHero({super.key, required this.session});
+
+  final StaffSession session;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: [
+          const IconBubble(
+              icon: Icons.dashboard_customize_outlined,
+              color: Color(0xFF38BDF8)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Halo, ${session.name}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Ringkasan operasional Tim-7 Net - ${session.role.toUpperCase()}',
+                  style: const TextStyle(
+                      color: Color(0xFFBAE6FD),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DashboardKpiGrid extends StatelessWidget {
+  const DashboardKpiGrid({super.key, required this.summary});
+
+  final StaffDashboardSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      KpiItem(
+        label: 'Total Pelanggan',
+        value: '${summary.totalCustomers}',
+        sub: '+${summary.newCustomersThisMonth} bulan ini',
+        icon: Icons.groups_outlined,
+        color: const Color(0xFF0284C7),
+      ),
+      KpiItem(
+        label: 'Pendapatan Bulan Ini',
+        value: rupiahCompact(summary.revenueThisMonth),
+        sub: '${summary.paidInvoicesThisMonth} tagihan lunas',
+        icon: Icons.account_balance_wallet_outlined,
+        color: const Color(0xFF16A34A),
+      ),
+      KpiItem(
+        label: 'Tagihan Jatuh Tempo',
+        value: '${summary.overdueInvoices}',
+        sub: '${summary.unpaidInvoices} belum dibayar',
+        icon: Icons.event_busy_outlined,
+        color: const Color(0xFFF59E0B),
+      ),
+      KpiItem(
+        label: 'Router Online',
+        value: '${summary.onlineRouters}/${summary.totalRouters}',
+        sub: '${summary.totalPppoe} PPPoE aktif',
+        icon: Icons.router_outlined,
+        color: const Color(0xFF7C3AED),
+      ),
+    ];
+
+    return GridView.count(
+      crossAxisCount: 2,
+      childAspectRatio: 1.18,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      children: items.map((item) => KpiCard(item: item)).toList(),
+    );
+  }
+}
+
+class KpiItem {
+  const KpiItem({
+    required this.label,
+    required this.value,
+    required this.sub,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final String sub;
+  final IconData icon;
+  final Color color;
+}
+
+class KpiCard extends StatelessWidget {
+  const KpiCard({super.key, required this.item});
+
+  final KpiItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconBubble(icon: item.icon, color: item.color),
+          const Spacer(),
+          FittedBox(
+            alignment: Alignment.centerLeft,
+            fit: BoxFit.scaleDown,
+            child: Text(item.value,
+                style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF0F172A))),
+          ),
+          const SizedBox(height: 2),
+          Text(item.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  color: Color(0xFF475569),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12)),
+          Text(item.sub,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+        ],
+      ),
+    );
+  }
+}
+
+class QuickInvoiceAction extends StatelessWidget {
+  const QuickInvoiceAction({super.key, required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFBFDBFE)),
+      ),
+      child: Row(
+        children: [
+          const IconBubble(
+              icon: Icons.receipt_long_outlined, color: Color(0xFF2563EB)),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Aksi Cepat Tagihan',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+                SizedBox(height: 3),
+                Text('Kelola status pembayaran, metode bayar, dan PDF invoice.',
+                    style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+              ],
+            ),
+          ),
+          IconButton.filled(
+            onPressed: onTap,
+            icon: const Icon(Icons.arrow_forward_rounded),
+            tooltip: 'Buka tagihan',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class RevenueChartCard extends StatelessWidget {
+  const RevenueChartCard({super.key, required this.points});
+
+  final List<RevenuePoint> points;
+
+  @override
+  Widget build(BuildContext context) {
+    final maxValue =
+        points.fold<int>(1, (max, item) => item.value > max ? item.value : max);
+    return DashboardSectionCard(
+      title: 'Pendapatan 6 Bulan Terakhir',
+      subtitle: 'Total tagihan terkumpul per bulan',
+      child: SizedBox(
+        height: 170,
+        child: points.isEmpty
+            ? const Center(
+                child: Text('Belum ada data pendapatan',
+                    style: TextStyle(color: Color(0xFF94A3B8))))
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: points.map((point) {
+                  final heightFactor =
+                      (point.value / maxValue).clamp(0.05, 1.0);
+                  final isLast = point == points.last;
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(point.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 9, color: Color(0xFF64748B))),
+                          const SizedBox(height: 6),
+                          Flexible(
+                            child: FractionallySizedBox(
+                              heightFactor: heightFactor,
+                              alignment: Alignment.bottomCenter,
+                              child: Container(
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: isLast
+                                      ? const Color(0xFF16A34A)
+                                      : const Color(0xFFBBF7D0),
+                                  borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(10)),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(point.month,
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: isLast
+                                      ? FontWeight.w900
+                                      : FontWeight.w600,
+                                  color: isLast
+                                      ? const Color(0xFF15803D)
+                                      : const Color(0xFF94A3B8))),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+      ),
+    );
+  }
+}
+
+class PackageDistributionCard extends StatelessWidget {
+  const PackageDistributionCard({super.key, required this.items});
+
+  final List<PackageDistributionItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return DashboardSectionCard(
+      title: 'Distribusi Paket',
+      subtitle: 'Komposisi pelanggan aktif',
+      child: items.isEmpty
+          ? const EmptyDashboardText(text: 'Belum ada data paket')
+          : Column(
+              children: items.map((item) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: MetricBar(
+                    label: item.name,
+                    trailing: '${item.total} (${item.percentage}%)',
+                    percentage: item.percentage,
+                    color: const Color(0xFF0284C7),
+                  ),
+                );
+              }).toList(),
+            ),
+    );
+  }
+}
+
+class InvoiceStatusCard extends StatelessWidget {
+  const InvoiceStatusCard({super.key, required this.status});
+
+  final InvoiceStatusSummary status;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      ('Lunas', status.paid, const Color(0xFF16A34A)),
+      ('Belum Bayar', status.unpaid, const Color(0xFFF59E0B)),
+      ('Jatuh Tempo', status.overdue, const Color(0xFFDC2626)),
+      ('Dibatalkan', status.cancelled, const Color(0xFF64748B)),
+    ];
+
+    return DashboardSectionCard(
+      title: 'Status Tagihan Bulan Ini',
+      subtitle: '${status.total} total tagihan bulan ini',
+      child: Column(
+        children: items.map((item) {
+          final percentage =
+              status.total > 0 ? ((item.$2 / status.total) * 100).round() : 0;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: MetricBar(
+              label: item.$1,
+              trailing: '${item.$2} ($percentage%)',
+              percentage: percentage,
+              color: item.$3,
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class UpcomingDueCard extends StatelessWidget {
+  const UpcomingDueCard(
+      {super.key, required this.items, required this.onViewAll});
+
+  final List<UpcomingDueItem> items;
+  final VoidCallback onViewAll;
+
+  @override
+  Widget build(BuildContext context) {
+    return DashboardSectionCard(
+      title: 'Tagihan Segera Jatuh Tempo',
+      subtitle: 'Prioritas penagihan terdekat',
+      action: TextButton(onPressed: onViewAll, child: const Text('Lihat')),
+      child: items.isEmpty
+          ? const EmptyDashboardText(
+              text: 'Tidak ada tagihan mendekati jatuh tempo')
+          : Column(
+              children: items.map((item) {
+                final color = item.days < 0
+                    ? const Color(0xFFDC2626)
+                    : item.days <= 1
+                        ? const Color(0xFFF59E0B)
+                        : const Color(0xFF64748B);
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: color.withValues(alpha: 0.12),
+                    child: Text(
+                        item.customerName.isEmpty
+                            ? '?'
+                            : item.customerName[0].toUpperCase(),
+                        style: TextStyle(
+                            color: color, fontWeight: FontWeight.w900)),
+                  ),
+                  title: Text(item.customerName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w800)),
+                  subtitle: Text(item.packageName,
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(rupiah(item.amount),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w900, fontSize: 12)),
+                      Text(item.dueLabel,
+                          style: TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 11)),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+    );
+  }
+}
+
+class NetworkCard extends StatelessWidget {
+  const NetworkCard({super.key, required this.network});
+
+  final NetworkSummary network;
+
+  @override
+  Widget build(BuildContext context) {
+    return DashboardSectionCard(
+      title: 'Jaringan',
+      subtitle: '${network.uptimePercentage}% router online',
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                  child: NetworkMiniCard(
+                      label: 'Router',
+                      value: '${network.totalRouters}',
+                      color: const Color(0xFF64748B))),
+              const SizedBox(width: 8),
+              Expanded(
+                  child: NetworkMiniCard(
+                      label: 'Online',
+                      value: '${network.onlineRouters}',
+                      color: const Color(0xFF16A34A))),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                  child: NetworkMiniCard(
+                      label: 'PPPoE Aktif',
+                      value: '${network.totalPppoe}',
+                      color: const Color(0xFF0284C7))),
+              const SizedBox(width: 8),
+              Expanded(
+                  child: NetworkMiniCard(
+                      label: 'Mapped',
+                      value: '${network.mappedCustomers}',
+                      color: const Color(0xFF7C3AED))),
+            ],
+          ),
+          const SizedBox(height: 14),
+          MetricBar(
+            label: 'Uptime Rate',
+            trailing: '${network.uptimePercentage}%',
+            percentage: network.uptimePercentage,
+            color: const Color(0xFF16A34A),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class NetworkMiniCard extends StatelessWidget {
+  const NetworkMiniCard(
+      {super.key,
+      required this.label,
+      required this.value,
+      required this.color});
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          Text(value,
+              style: TextStyle(
+                  color: color, fontWeight: FontWeight.w900, fontSize: 20)),
+          Text(label,
+              style: const TextStyle(color: Color(0xFF64748B), fontSize: 11)),
+        ],
+      ),
+    );
+  }
+}
+
+class LatestCustomersCard extends StatelessWidget {
+  const LatestCustomersCard({super.key, required this.customers});
+
+  final List<LatestCustomerItem> customers;
+
+  @override
+  Widget build(BuildContext context) {
+    return DashboardSectionCard(
+      title: 'Pelanggan Terbaru',
+      subtitle: 'Aktivitas registrasi terbaru',
+      child: customers.isEmpty
+          ? const EmptyDashboardText(text: 'Belum ada pelanggan')
+          : Column(
+              children: customers.map((customer) {
+                final color = customer.status == 'aktif'
+                    ? const Color(0xFF16A34A)
+                    : customer.status == 'suspend'
+                        ? const Color(0xFFF59E0B)
+                        : const Color(0xFFDC2626);
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: const Color(0xFF0284C7),
+                    child: Text(
+                        customer.name.isEmpty
+                            ? '?'
+                            : customer.name[0].toUpperCase(),
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.w900)),
+                  ),
+                  title: Text(customer.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w800)),
+                  subtitle: Text(
+                      '${customer.packageName} - ${customer.joinDateLabel}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  trailing:
+                      StatusPill(label: customer.statusLabel, color: color),
+                );
+              }).toList(),
+            ),
+    );
+  }
+}
+
+class DashboardSectionCard extends StatelessWidget {
+  const DashboardSectionCard({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.child,
+    this.action,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget child;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF0F172A))),
+                    const SizedBox(height: 3),
+                    Text(subtitle,
+                        style: const TextStyle(
+                            color: Color(0xFF94A3B8), fontSize: 12)),
+                  ],
+                ),
+              ),
+              if (action != null) action!,
+            ],
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class MetricBar extends StatelessWidget {
+  const MetricBar({
+    super.key,
+    required this.label,
+    required this.trailing,
+    required this.percentage,
+    required this.color,
+  });
+
+  final String label;
+  final String trailing;
+  final int percentage;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final widthFactor = (percentage.clamp(0, 100)) / 100;
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+                child: Text(label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: Color(0xFF334155),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12))),
+            Text(trailing,
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: widthFactor,
+            minHeight: 8,
+            backgroundColor: const Color(0xFFE2E8F0),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class EmptyDashboardText extends StatelessWidget {
+  const EmptyDashboardText({super.key, required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Center(
+        child: Text(text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Color(0xFF94A3B8))),
+      ),
+    );
+  }
+}
+
+class StaffInvoicesPage extends StatefulWidget {
+  const StaffInvoicesPage({
+    super.key,
+    required this.session,
+  });
+
+  final StaffSession session;
 
   @override
   State<StaffInvoicesPage> createState() => _StaffInvoicesPageState();
@@ -1199,11 +2229,6 @@ class _StaffInvoicesPageState extends State<StaffInvoicesPage> {
             tooltip: 'Muat ulang',
             onPressed: _refresh,
             icon: const Icon(Icons.refresh_rounded),
-          ),
-          IconButton(
-            tooltip: 'Keluar',
-            onPressed: widget.onLogout,
-            icon: const Icon(Icons.logout_rounded),
           ),
         ],
       ),
@@ -2692,6 +3717,17 @@ String rupiah(int amount) {
     symbol: 'Rp ',
     decimalDigits: 0,
   ).format(amount);
+}
+
+int intValue(Object? value) => int.tryParse(value?.toString() ?? '') ?? 0;
+
+String rupiahCompact(int amount) {
+  if (amount >= 1000000) {
+    final value = amount / 1000000;
+    return 'Rp ${value.toStringAsFixed(1).replaceAll('.', ',')} Jt';
+  }
+
+  return rupiah(amount);
 }
 
 String formatPeriodLabel(DateTime date) {

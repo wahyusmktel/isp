@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\News;
+use App\Models\Router;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -149,6 +150,149 @@ class MobileCustomerController extends Controller
                 'email' => $user->email,
                 'role' => $user->role,
             ],
+        ]);
+    }
+
+    public function staffDashboard(Request $request): JsonResponse
+    {
+        if (!$this->staffUser($request)) {
+            return $this->unauthorizedStaff();
+        }
+
+        $totalCustomers = Customer::count();
+        $activeCustomers = Customer::where('status', 'aktif')->count();
+        $newThisMonth = Customer::whereYear('join_date', now()->year)
+            ->whereMonth('join_date', now()->month)
+            ->count();
+
+        $revenueThisMonth = (int) Invoice::where('status', 'paid')
+            ->whereYear('paid_at', now()->year)
+            ->whereMonth('paid_at', now()->month)
+            ->sum('amount');
+        $paidThisMonth = Invoice::where('status', 'paid')
+            ->whereYear('paid_at', now()->year)
+            ->whereMonth('paid_at', now()->month)
+            ->count();
+
+        $overdueCount = Invoice::where('status', 'overdue')->count();
+        $unpaidCount = Invoice::where('status', 'unpaid')->count();
+
+        $totalRouters = Router::count();
+        $onlineRouters = Router::where('status', 'online')->count();
+        $totalPppoe = (int) Router::sum('pppoe_online');
+        $mappedCustomers = Customer::whereNotNull('pppoe_user')->where('pppoe_user', '!=', '')->count();
+
+        $revenueChart = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $total = (int) Invoice::where('status', 'paid')
+                ->whereYear('paid_at', $date->year)
+                ->whereMonth('paid_at', $date->month)
+                ->sum('amount');
+            $revenueChart[] = [
+                'month' => $date->translatedFormat('M'),
+                'value' => $total,
+                'label' => 'Rp ' . number_format($total / 1000000, 1, ',', '.') . ' Jt',
+            ];
+        }
+
+        $packageDistribution = Customer::where('status', 'aktif')
+            ->join('packages', 'customers.package_id', '=', 'packages.id')
+            ->selectRaw('packages.name as name, COUNT(*) as total')
+            ->groupBy('packages.id', 'packages.name')
+            ->orderByDesc('total')
+            ->limit(6)
+            ->get()
+            ->map(fn ($item) => [
+                'name' => $item->name,
+                'total' => (int) $item->total,
+                'percentage' => $activeCustomers > 0 ? round(((int) $item->total / $activeCustomers) * 100) : 0,
+            ])
+            ->values();
+
+        $monthlyInvoices = Invoice::whereYear('billing_period', now()->year)
+            ->whereMonth('billing_period', now()->month);
+        $invoiceTotal = (clone $monthlyInvoices)->count();
+        $invoicePaid = (clone $monthlyInvoices)->where('status', 'paid')->count();
+        $invoiceUnpaid = (clone $monthlyInvoices)->where('status', 'unpaid')->count();
+        $invoiceOverdue = (clone $monthlyInvoices)->where('status', 'overdue')->count();
+        $invoiceCancelled = (clone $monthlyInvoices)->where('status', 'cancelled')->count();
+
+        $upcomingDue = Invoice::with('customer:id,name,phone,package_id', 'customer.package:id,name')
+            ->whereIn('status', ['unpaid', 'overdue'])
+            ->orderBy('due_date')
+            ->limit(5)
+            ->get()
+            ->map(function (Invoice $invoice) {
+                $diff = now()->startOfDay()->diffInDays($invoice->due_date, false);
+                if ($diff < 0) {
+                    $dueLabel = abs($diff) . ' hari terlambat';
+                } elseif ($diff === 0) {
+                    $dueLabel = 'Hari ini';
+                } elseif ($diff === 1) {
+                    $dueLabel = 'Besok';
+                } else {
+                    $dueLabel = $diff . ' hari lagi';
+                }
+
+                return [
+                    'customer_name' => $invoice->customer?->name ?? '-',
+                    'package_name' => $invoice->customer?->package?->name ?? '-',
+                    'amount' => (int) $invoice->amount,
+                    'due_label' => $dueLabel,
+                    'days' => (int) $diff,
+                    'status' => $invoice->status,
+                ];
+            })
+            ->values();
+
+        $latestCustomers = Customer::with('package:id,name,category')
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get()
+            ->map(fn (Customer $customer) => [
+                'name' => $customer->name,
+                'phone' => $customer->phone,
+                'package_name' => $customer->package?->name ?? '-',
+                'join_date_label' => $customer->join_date?->translatedFormat('d M Y') ?? '-',
+                'status' => $customer->status,
+                'status_label' => $customer->status_label,
+            ])
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'summary' => [
+                'total_customers' => $totalCustomers,
+                'active_customers' => $activeCustomers,
+                'new_customers_this_month' => $newThisMonth,
+                'revenue_this_month' => $revenueThisMonth,
+                'paid_invoices_this_month' => $paidThisMonth,
+                'overdue_invoices' => $overdueCount,
+                'unpaid_invoices' => $unpaidCount,
+                'online_routers' => $onlineRouters,
+                'total_routers' => $totalRouters,
+                'total_pppoe' => $totalPppoe,
+                'mapped_customers' => $mappedCustomers,
+            ],
+            'revenue_chart' => $revenueChart,
+            'package_distribution' => $packageDistribution,
+            'invoice_status' => [
+                'total' => $invoiceTotal,
+                'paid' => $invoicePaid,
+                'unpaid' => $invoiceUnpaid,
+                'overdue' => $invoiceOverdue,
+                'cancelled' => $invoiceCancelled,
+            ],
+            'upcoming_due' => $upcomingDue,
+            'network' => [
+                'total_routers' => $totalRouters,
+                'online_routers' => $onlineRouters,
+                'total_pppoe' => $totalPppoe,
+                'mapped_customers' => $mappedCustomers,
+                'uptime_percentage' => $totalRouters > 0 ? round(($onlineRouters / $totalRouters) * 100) : 0,
+            ],
+            'latest_customers' => $latestCustomers,
         ]);
     }
 
