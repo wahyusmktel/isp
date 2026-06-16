@@ -48,11 +48,25 @@ class CustomerActivityController extends Controller
             'description' => $desc,
         ]);
 
-        if ($this->isDisconnectAction($action)) {
+        if ($this->isConnectAction($action)) {
+            $whatsApp->notifyPppoeConnected($activity);
+        } elseif ($this->isDisconnectAction($action)) {
             $whatsApp->notifyPppoeDisconnected($activity);
         }
 
         return response()->json(['success' => true]);
+    }
+
+    private function isConnectAction(string $action): bool
+    {
+        return in_array(strtolower(trim($action)), [
+            'connected',
+            'connect',
+            'up',
+            'online',
+            'login',
+            'logged_in',
+        ], true);
     }
 
     private function isDisconnectAction(string $action): bool

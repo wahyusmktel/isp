@@ -17,7 +17,8 @@ class WhatsAppController extends Controller
             'bridgeUrl' => config('services.whatsapp.bridge_url'),
             'notificationGroupId' => Setting::get('whatsapp_notification_group_id', ''),
             'notificationGroupName' => Setting::get('whatsapp_notification_group_name', ''),
-            'notificationEnabled' => Setting::get('whatsapp_pppoe_disconnected_enabled', '1') === '1',
+            'notificationConnectedEnabled' => Setting::get('whatsapp_pppoe_connected_enabled', '1') === '1',
+            'notificationDisconnectedEnabled' => Setting::get('whatsapp_pppoe_disconnected_enabled', '1') === '1',
         ]);
     }
 
@@ -61,12 +62,14 @@ class WhatsAppController extends Controller
         $validated = $request->validate([
             'group_id' => ['nullable', 'string', 'max:120'],
             'group_name' => ['nullable', 'string', 'max:255'],
-            'enabled' => ['nullable', 'boolean'],
+            'connected_enabled' => ['nullable', 'boolean'],
+            'disconnected_enabled' => ['nullable', 'boolean'],
         ]);
 
         Setting::set('whatsapp_notification_group_id', $validated['group_id'] ?? '');
         Setting::set('whatsapp_notification_group_name', $validated['group_name'] ?? '');
-        Setting::set('whatsapp_pppoe_disconnected_enabled', $request->boolean('enabled') ? '1' : '0');
+        Setting::set('whatsapp_pppoe_connected_enabled', $request->boolean('connected_enabled') ? '1' : '0');
+        Setting::set('whatsapp_pppoe_disconnected_enabled', $request->boolean('disconnected_enabled') ? '1' : '0');
 
         return response()->json([
             'success' => true,

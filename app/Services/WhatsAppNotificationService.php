@@ -9,12 +9,26 @@ use Illuminate\Support\Facades\Log;
 
 class WhatsAppNotificationService
 {
+    public function notifyPppoeConnected(CustomerActivity $activity): void
+    {
+        if (Setting::get('whatsapp_pppoe_connected_enabled', '1') !== '1') {
+            return;
+        }
+
+        $this->sendPppoeActivityNotification($activity, 'PPPoE Terhubung', 'Terhubung');
+    }
+
     public function notifyPppoeDisconnected(CustomerActivity $activity): void
     {
         if (Setting::get('whatsapp_pppoe_disconnected_enabled', '1') !== '1') {
             return;
         }
 
+        $this->sendPppoeActivityNotification($activity, 'PPPoE Terputus', 'Terputus');
+    }
+
+    private function sendPppoeActivityNotification(CustomerActivity $activity, string $title, string $statusLabel): void
+    {
         $groupId = Setting::get('whatsapp_notification_group_id', '');
         if (! $groupId) {
             Log::info('WhatsApp PPPoE notification skipped: group is not configured.');
@@ -29,8 +43,9 @@ class WhatsAppNotificationService
         $address = $customer?->address ?? '-';
 
         $message = implode("\n", [
-            '*PPPoE Terputus*',
+            '*' . $title . '*',
             '',
+            'Status: ' . $statusLabel,
             'Pelanggan: ' . $customerName,
             'PPPoE: ' . ($activity->pppoe_user ?? '-'),
             'Paket: ' . $package,
@@ -52,12 +67,16 @@ class WhatsAppNotificationService
 
             if (! $response->successful()) {
                 Log::warning('WhatsApp PPPoE notification failed.', [
+                    'activity_id' => $activity->id,
+                    'action' => $activity->action,
                     'status' => $response->status(),
                     'body' => $response->json() ?? $response->body(),
                 ]);
             }
         } catch (\Throwable $exception) {
             Log::warning('WhatsApp PPPoE notification exception.', [
+                'activity_id' => $activity->id,
+                'action' => $activity->action,
                 'message' => $exception->getMessage(),
             ]);
         }

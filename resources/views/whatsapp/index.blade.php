@@ -105,11 +105,15 @@
         <section class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
             <div class="px-5 py-4 border-b border-gray-100">
                 <h2 class="text-base font-bold text-gray-900">Notifikasi Group</h2>
-                <p class="text-sm text-gray-500">Pilih group penerima notifikasi saat PPPoE pelanggan terputus.</p>
+                <p class="text-sm text-gray-500">Pilih group penerima notifikasi saat PPPoE pelanggan terhubung atau terputus.</p>
             </div>
             <form id="settings-form" class="p-5 space-y-4 border-b border-gray-100">
                 <label class="flex items-center gap-3 text-sm font-semibold text-gray-700">
-                    <input type="checkbox" name="enabled" value="1" class="rounded border-gray-300 text-green-600 focus:ring-green-500" {{ $notificationEnabled ? 'checked' : '' }}>
+                    <input type="checkbox" name="connected_enabled" value="1" class="rounded border-gray-300 text-green-600 focus:ring-green-500" {{ $notificationConnectedEnabled ? 'checked' : '' }}>
+                    Aktifkan notifikasi PPPoE terhubung
+                </label>
+                <label class="flex items-center gap-3 text-sm font-semibold text-gray-700">
+                    <input type="checkbox" name="disconnected_enabled" value="1" class="rounded border-gray-300 text-green-600 focus:ring-green-500" {{ $notificationDisconnectedEnabled ? 'checked' : '' }}>
                     Aktifkan notifikasi PPPoE terputus
                 </label>
                 <div>
@@ -290,7 +294,8 @@ document.getElementById('settings-form').addEventListener('submit', async functi
         body: JSON.stringify({
             group_id: form.get('group_id') || '',
             group_name: selected?.dataset?.name || form.get('group_name') || '',
-            enabled: form.get('enabled') === '1',
+            connected_enabled: form.get('connected_enabled') === '1',
+            disconnected_enabled: form.get('disconnected_enabled') === '1',
         }),
     });
     showInlineResult('settings-result', data);
