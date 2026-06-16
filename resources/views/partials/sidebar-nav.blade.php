@@ -148,6 +148,16 @@
     </a>
 
     @if(auth()->user()->role === 'admin')
+    <a href="{{ route('whatsapp.index') }}" class="sidebar-link {{ request()->routeIs('whatsapp.*') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Manajemen WhatsApp">
+        <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.52 3.48A11.84 11.84 0 0012.08 0C5.48 0 .12 5.36.12 11.96c0 2.1.55 4.16 1.6 5.97L0 24l6.23-1.63a11.94 11.94 0 005.85 1.49h.01c6.6 0 11.96-5.36 11.96-11.96 0-3.2-1.25-6.2-3.53-8.42z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.4 6.9c-.25-.55-.51-.56-.75-.57h-.64c-.22 0-.58.08-.88.41-.3.33-1.15 1.12-1.15 2.73s1.18 3.17 1.34 3.39c.16.22 2.28 3.65 5.62 4.97 2.78 1.1 3.35.88 3.95.82.61-.05 1.96-.8 2.24-1.57.28-.77.28-1.43.19-1.57-.08-.14-.3-.22-.63-.39-.33-.17-1.96-.97-2.26-1.08-.3-.11-.52-.17-.74.17-.22.33-.85 1.08-1.04 1.3-.19.22-.38.25-.71.08-.33-.17-1.39-.51-2.65-1.63-.98-.87-1.64-1.95-1.83-2.28-.19-.33-.02-.51.14-.67.14-.14.33-.38.49-.58.16-.19.22-.33.33-.55.11-.22.05-.41-.03-.58-.08-.17-.72-1.79-.99-2.41z"/>
+        </svg>
+        <span class="sidebar-text whitespace-nowrap">Manajemen WA</span>
+    </a>
+    @endif
+
+    @if(auth()->user()->role === 'admin')
     <a href="{{ route('users.index') }}" class="sidebar-link {{ request()->routeIs('users.*') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Kelola Pengguna">
         <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>

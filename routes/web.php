@@ -49,6 +49,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', [\App\Http\Controllers\SettingController::class, 'index'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\SettingController::class, 'update'])->name('settings.update');
 
+    Route::get('/whatsapp', [\App\Http\Controllers\WhatsAppController::class, 'index'])->name('whatsapp.index');
+    Route::get('/whatsapp/status', [\App\Http\Controllers\WhatsAppController::class, 'status'])->name('whatsapp.status');
+    Route::post('/whatsapp/connect', [\App\Http\Controllers\WhatsAppController::class, 'connect'])->name('whatsapp.connect');
+    Route::post('/whatsapp/logout', [\App\Http\Controllers\WhatsAppController::class, 'logout'])->name('whatsapp.logout');
+    Route::post('/whatsapp/test-message', [\App\Http\Controllers\WhatsAppController::class, 'sendTest'])->name('whatsapp.test-message');
+
     Route::get('/packages', [\App\Http\Controllers\PackageController::class, 'index'])->name('packages.index');
     Route::post('/packages', [\App\Http\Controllers\PackageController::class, 'store'])->name('packages.store');
     Route::put('/packages/{package}', [\App\Http\Controllers\PackageController::class, 'update'])->name('packages.update');
