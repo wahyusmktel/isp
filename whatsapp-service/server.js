@@ -6,8 +6,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import makeWASocket, {
+  Browsers,
   DisconnectReason,
   fetchLatestBaileysVersion,
+  makeCacheableSignalKeyStore,
   useMultiFileAuthState,
 } from '@whiskeysockets/baileys';
 
@@ -33,8 +35,10 @@ let connecting = null;
 let connectStartedAt = null;
 let lastDisconnectCode = null;
 let lastConnectionUpdate = null;
+let reconnectTimer = null;
+let reconnectAttempts = 0;
 
-const logger = pino({ level: process.env.WHATSAPP_LOG_LEVEL || 'silent' });
+const logger = pino({ level: process.env.WHATSAPP_LOG_LEVEL || 'info' });
 const setupTimeoutMs = Number(process.env.WHATSAPP_SETUP_TIMEOUT_MS || 60000);
 
 function normalizePhone(input) {
@@ -59,7 +63,16 @@ function hasActiveSocket() {
   return Boolean(sock && status === 'connected');
 }
 
+function clearReconnectTimer() {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+}
+
 async function closeSocket() {
+  clearReconnectTimer();
+
   if (sock) {
     try {
       sock.end?.();
@@ -80,7 +93,25 @@ function clearRuntimeState(nextStatus = 'disconnected') {
   lastDisconnectCode = null;
   lastConnectionUpdate = null;
   lastError = null;
+  reconnectAttempts = 0;
   status = nextStatus;
+}
+
+function scheduleReconnect(reason = 'unknown') {
+  if (reconnectTimer || connecting || status === 'logged_out') return;
+
+  reconnectAttempts += 1;
+  const delay = Math.min(30000, 2000 * reconnectAttempts);
+  console.log(`Scheduling WhatsApp reconnect in ${delay}ms. Reason: ${reason}. Attempt: ${reconnectAttempts}`);
+
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    connectWhatsapp().catch((error) => {
+      console.error('WhatsApp reconnect failed:', error);
+      lastError = error.message;
+      status = 'error';
+    });
+  }, delay);
 }
 
 async function connectWhatsapp() {
@@ -90,6 +121,7 @@ async function connectWhatsapp() {
     status = sock ? status : 'connecting';
     connectStartedAt = Date.now();
     lastError = null;
+    clearReconnectTimer();
 
     console.log(`Preparing WhatsApp session in ${authDir}`);
 
@@ -104,11 +136,19 @@ async function connectWhatsapp() {
     const { version } = await fetchLatestBaileysVersion();
 
     sock = makeWASocket({
-      auth: state,
+      auth: {
+        creds: state.creds,
+        keys: makeCacheableSignalKeyStore(state.keys, logger),
+      },
       version,
       logger,
       printQRInTerminal: false,
-      browser: ['ISP Manager', 'Chrome', '1.0.0'],
+      browser: Browsers.ubuntu('ISP Manager'),
+      connectTimeoutMs: 60000,
+      defaultQueryTimeoutMs: 60000,
+      keepAliveIntervalMs: 20000,
+      markOnlineOnConnect: false,
+      syncFullHistory: false,
     });
 
     sock.ev.on('creds.update', saveCreds);
@@ -134,6 +174,7 @@ async function connectWhatsapp() {
           color: { dark: '#0f172a', light: '#ffffff' },
         });
         status = 'qr';
+        reconnectAttempts = 0;
       }
 
       if (connection === 'open') {
@@ -143,6 +184,7 @@ async function connectWhatsapp() {
         status = 'connected';
         connectedNumber = sock.user?.id?.split(':')[0] || sock.user?.id || null;
         lastDisconnectCode = null;
+        reconnectAttempts = 0;
         console.log(`WhatsApp connected as ${connectedNumber || 'unknown number'}`);
       }
 
@@ -155,6 +197,7 @@ async function connectWhatsapp() {
 
         console.log(`WhatsApp connection closed: ${disconnectReasonName(code)} (${code || 'no-code'})`);
 
+        const reason = disconnectReasonName(code);
         status = loggedOut ? 'logged_out' : (restartRequired ? 'connecting' : 'disconnected');
         sock = null;
 
@@ -166,12 +209,7 @@ async function connectWhatsapp() {
         }
 
         if (!loggedOut) {
-          setTimeout(() => {
-            connectWhatsapp().catch((error) => {
-              lastError = error.message;
-              status = 'error';
-            });
-          }, 2000);
+          scheduleReconnect(reason);
         }
       }
     });
@@ -203,6 +241,7 @@ function currentState() {
     last_disconnect_code: lastDisconnectCode,
     last_disconnect_reason: lastDisconnectCode ? disconnectReasonName(lastDisconnectCode) : null,
     last_connection_update: lastConnectionUpdate,
+    reconnect_attempts: reconnectAttempts,
     connecting_for_seconds: connectStartedAt && status === 'connecting'
       ? Math.round((Date.now() - connectStartedAt) / 1000)
       : null,
@@ -215,11 +254,16 @@ function statusMessage() {
   if (status === 'logged_out') return lastError || 'Sesi WhatsApp keluar. Reset sesi lalu scan QR baru.';
   if (status === 'error') return lastError || 'Service WhatsApp mengalami error.';
   if (status === 'connecting' || status === 'starting') return 'WhatsApp sedang menyelesaikan koneksi. Tunggu sampai status Terhubung.';
+  if (status === 'disconnected' && lastDisconnectCode) return `WhatsApp terputus: ${disconnectReasonName(lastDisconnectCode)}. Mencoba koneksi ulang.`;
   return 'WhatsApp belum terhubung.';
 }
 
 app.get('/health', (_req, res) => {
   res.json({ success: true, service: 'whatsapp-bridge', status });
+});
+
+app.get('/debug', (_req, res) => {
+  res.json(currentState());
 });
 
 app.post('/connect', (_req, res) => {
@@ -233,7 +277,7 @@ app.post('/connect', (_req, res) => {
 
 app.get('/status', (_req, res) => {
   if (!sock && status !== 'logged_out') {
-    startConnect();
+    scheduleReconnect('status-check');
   }
 
   res.json(currentState());

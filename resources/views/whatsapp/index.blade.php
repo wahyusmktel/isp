@@ -73,6 +73,19 @@
                         <p id="connected-number" class="text-2xl font-bold text-gray-900">-</p>
                         <p class="text-xs text-gray-500 mt-1">Nomor akan muncul setelah QR berhasil discan.</p>
                     </div>
+                    <div class="rounded-2xl border border-gray-100 bg-white p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Diagnostik</p>
+                        <dl class="grid grid-cols-1 gap-2 text-xs text-gray-600">
+                            <div class="flex items-center justify-between gap-3">
+                                <dt>Disconnect terakhir</dt>
+                                <dd id="last-disconnect" class="font-mono text-right text-gray-900">-</dd>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <dt>Reconnect</dt>
+                                <dd id="reconnect-attempts" class="font-mono text-right text-gray-900">0</dd>
+                            </div>
+                        </dl>
+                    </div>
                     <button type="button" onclick="logoutWhatsapp()" class="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
@@ -146,6 +159,10 @@ function renderStatus(data) {
     const suffix = data.connecting_for_seconds ? ` (${data.connecting_for_seconds} detik)` : '';
     document.getElementById('status-message').textContent = (data.message || 'Status tidak diketahui.') + suffix;
     document.getElementById('connected-number').textContent = data.number || '-';
+    document.getElementById('last-disconnect').textContent = data.last_disconnect_reason
+        ? `${data.last_disconnect_reason} (${data.last_disconnect_code || '-'})`
+        : '-';
+    document.getElementById('reconnect-attempts').textContent = data.reconnect_attempts ?? 0;
     document.getElementById('btn-send').disabled = data.connected !== true;
     document.getElementById('btn-send').classList.toggle('opacity-60', data.connected !== true);
     document.getElementById('btn-send').classList.toggle('cursor-not-allowed', data.connected !== true);
