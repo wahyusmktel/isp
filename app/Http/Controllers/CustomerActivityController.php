@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\CustomerActivity;
+use App\Services\WhatsAppNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -18,8 +19,15 @@ class CustomerActivityController extends Controller
         return view('customers.activities', compact('activities'));
     }
 
-    public function webhook(Request $request): JsonResponse
+    public function webhook(Request $request, WhatsAppNotificationService $whatsApp): JsonResponse
     {
+        $expectedToken = config('services.customer_activity.webhook_token');
+        $givenToken = (string) $request->input('token', $request->header('X-Webhook-Token', ''));
+
+        if ($expectedToken && ! hash_equals($expectedToken, $givenToken)) {
+            return response()->json(['error' => 'Invalid webhook token'], 403);
+        }
+
         // Parameter expected from Mikrotik script: pppoe_user, action (connected/disconnected), ip_address, description
         $user = $request->input('pppoe_user');
         $action = $request->input('action'); // connected or disconnected
@@ -32,7 +40,7 @@ class CustomerActivityController extends Controller
 
         $customer = Customer::where('pppoe_user', $user)->first();
 
-        CustomerActivity::create([
+        $activity = CustomerActivity::create([
             'customer_id' => $customer ? $customer->id : null,
             'pppoe_user'  => $user,
             'action'      => $action,
@@ -40,7 +48,23 @@ class CustomerActivityController extends Controller
             'description' => $desc,
         ]);
 
+        if ($this->isDisconnectAction($action)) {
+            $whatsApp->notifyPppoeDisconnected($activity);
+        }
+
         return response()->json(['success' => true]);
+    }
+
+    private function isDisconnectAction(string $action): bool
+    {
+        return in_array(strtolower(trim($action)), [
+            'disconnected',
+            'disconnect',
+            'down',
+            'offline',
+            'logout',
+            'logged_out',
+        ], true);
     }
 
     public function latestApi(): JsonResponse

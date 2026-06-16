@@ -104,13 +104,38 @@
 
         <section class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
             <div class="px-5 py-4 border-b border-gray-100">
+                <h2 class="text-base font-bold text-gray-900">Notifikasi Group</h2>
+                <p class="text-sm text-gray-500">Pilih group penerima notifikasi saat PPPoE pelanggan terputus.</p>
+            </div>
+            <form id="settings-form" class="p-5 space-y-4 border-b border-gray-100">
+                <label class="flex items-center gap-3 text-sm font-semibold text-gray-700">
+                    <input type="checkbox" name="enabled" value="1" class="rounded border-gray-300 text-green-600 focus:ring-green-500" {{ $notificationEnabled ? 'checked' : '' }}>
+                    Aktifkan notifikasi PPPoE terputus
+                </label>
+                <div>
+                    <div class="flex items-center justify-between gap-3 mb-2">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500">Group Tujuan</label>
+                        <button type="button" onclick="loadGroups()" class="text-xs font-semibold text-green-600 hover:text-green-700">Refresh group</button>
+                    </div>
+                    <select id="group-select" name="group_id" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="{{ $notificationGroupId }}">{{ $notificationGroupName ?: ($notificationGroupId ?: 'Pilih group WhatsApp') }}</option>
+                    </select>
+                    <input type="hidden" name="group_name" id="group-name" value="{{ $notificationGroupName }}">
+                </div>
+                <button type="submit" id="btn-save-settings" class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-bold text-white hover:bg-gray-800 transition-colors">
+                    Simpan Pengaturan WA
+                </button>
+                <div id="settings-result" class="hidden rounded-xl px-4 py-3 text-sm"></div>
+            </form>
+
+            <div class="px-5 py-4 border-b border-gray-100">
                 <h2 class="text-base font-bold text-gray-900">Uji Kirim Pesan</h2>
-                <p class="text-sm text-gray-500">Gunakan untuk memastikan koneksi WhatsApp sudah bisa mengirim pesan.</p>
+                <p class="text-sm text-gray-500">Gunakan group terpilih atau nomor pribadi untuk test.</p>
             </div>
             <form id="test-form" class="p-5 space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Nomor Tujuan</label>
-                    <input type="text" name="to" required placeholder="Contoh: 082279122727" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Tujuan</label>
+                    <input type="text" name="to" id="test-to" required value="{{ $notificationGroupId }}" placeholder="Nomor WA atau group id" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Pesan</label>
@@ -137,6 +162,8 @@ const WA_ROUTES = {
     connect: @json('/whatsapp/connect'),
     logout: @json('/whatsapp/logout'),
     reset: @json('/whatsapp/reset'),
+    groups: @json('/whatsapp/groups'),
+    settings: @json('/whatsapp/settings'),
     test: @json('/whatsapp/test-message'),
 };
 const WA_CSRF = document.querySelector('meta[name="csrf-token"]').content;
@@ -219,6 +246,56 @@ async function resetWhatsapp() {
     renderStatus(data);
 }
 
+function showInlineResult(elementId, data) {
+    const result = document.getElementById(elementId);
+    result.textContent = data.message || (data.success ? 'Berhasil.' : 'Gagal.');
+    result.className = `rounded-xl px-4 py-3 text-sm ${data.success ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'}`;
+}
+
+async function loadGroups() {
+    const select = document.getElementById('group-select');
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">Memuat daftar group...</option>';
+
+    const data = await requestJson(WA_ROUTES.groups);
+    if (!data.success) {
+        select.innerHTML = `<option value="${currentValue}">${currentValue || 'Gagal memuat group'}</option>`;
+        showInlineResult('settings-result', data);
+        return;
+    }
+
+    select.innerHTML = '<option value="">Pilih group WhatsApp</option>';
+    data.groups.forEach((group) => {
+        const option = document.createElement('option');
+        option.value = group.id;
+        option.textContent = `${group.name} (${group.participants_count} anggota)`;
+        option.dataset.name = group.name;
+        if (group.id === currentValue) option.selected = true;
+        select.appendChild(option);
+    });
+}
+
+document.getElementById('group-select').addEventListener('change', function () {
+    const selected = this.options[this.selectedIndex];
+    document.getElementById('group-name').value = selected?.dataset?.name || selected?.textContent || '';
+    document.getElementById('test-to').value = this.value;
+});
+
+document.getElementById('settings-form').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const form = new FormData(this);
+    const selected = document.getElementById('group-select').options[document.getElementById('group-select').selectedIndex];
+    const data = await requestJson(WA_ROUTES.settings, {
+        method: 'POST',
+        body: JSON.stringify({
+            group_id: form.get('group_id') || '',
+            group_name: selected?.dataset?.name || form.get('group_name') || '',
+            enabled: form.get('enabled') === '1',
+        }),
+    });
+    showInlineResult('settings-result', data);
+});
+
 document.getElementById('test-form').addEventListener('submit', async function (event) {
     event.preventDefault();
     const btn = document.getElementById('btn-send');
@@ -243,6 +320,7 @@ document.getElementById('test-form').addEventListener('submit', async function (
 });
 
 refreshStatus();
+loadGroups();
 waPoll = setInterval(refreshStatus, 5000);
 window.addEventListener('beforeunload', () => clearInterval(waPoll));
 </script>

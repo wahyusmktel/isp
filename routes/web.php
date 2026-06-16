@@ -31,6 +31,10 @@ Route::post('/customer/logout', [\App\Http\Controllers\CustomerAuthController::c
 Route::get('/customer/dashboard', [\App\Http\Controllers\CustomerPortalController::class, 'dashboard'])->name('customer.dashboard');
 Route::post('/customer/tickets', [\App\Http\Controllers\CustomerTicketController::class, 'store'])->name('customer.tickets.store');
 
+Route::post('/customers/activities/webhook', [\App\Http\Controllers\CustomerActivityController::class, 'webhook'])
+    ->name('customers.activities.webhook')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
 // ─── Authenticated (harus login) ─────────────────────────────────────────────
 Route::middleware('auth')->group(function () {
 
@@ -51,9 +55,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/whatsapp', [\App\Http\Controllers\WhatsAppController::class, 'index'])->name('whatsapp.index');
     Route::get('/whatsapp/status', [\App\Http\Controllers\WhatsAppController::class, 'status'])->name('whatsapp.status');
+    Route::get('/whatsapp/groups', [\App\Http\Controllers\WhatsAppController::class, 'groups'])->name('whatsapp.groups');
     Route::post('/whatsapp/connect', [\App\Http\Controllers\WhatsAppController::class, 'connect'])->name('whatsapp.connect');
     Route::post('/whatsapp/logout', [\App\Http\Controllers\WhatsAppController::class, 'logout'])->name('whatsapp.logout');
     Route::post('/whatsapp/reset', [\App\Http\Controllers\WhatsAppController::class, 'reset'])->name('whatsapp.reset');
+    Route::post('/whatsapp/settings', [\App\Http\Controllers\WhatsAppController::class, 'saveSettings'])->name('whatsapp.settings');
     Route::post('/whatsapp/test-message', [\App\Http\Controllers\WhatsAppController::class, 'sendTest'])->name('whatsapp.test-message');
 
     Route::get('/packages', [\App\Http\Controllers\PackageController::class, 'index'])->name('packages.index');
@@ -67,7 +73,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/customers/search', [\App\Http\Controllers\CustomerController::class, 'search'])->name('customers.search');
     Route::get('/customers/activities', [\App\Http\Controllers\CustomerActivityController::class, 'index'])->name('customers.activities');
     Route::get('/customers/activities/latest', [\App\Http\Controllers\CustomerActivityController::class, 'latestApi'])->name('customers.activities.latest');
-    Route::post('/customers/activities/webhook', [\App\Http\Controllers\CustomerActivityController::class, 'webhook'])->name('customers.activities.webhook')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
     Route::get('/customers/{customer}', [\App\Http\Controllers\CustomerController::class, 'show'])->name('customers.show');
     Route::get('/customers/{customer}/live-traffic', [\App\Http\Controllers\CustomerController::class, 'liveTraffic'])->name('customers.live_traffic');
     Route::post('/customers', [\App\Http\Controllers\CustomerController::class, 'store'])->name('customers.store');

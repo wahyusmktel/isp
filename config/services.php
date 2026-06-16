@@ -40,4 +40,8 @@ return [
         'timeout' => env('WHATSAPP_BRIDGE_TIMEOUT', 10),
     ],
 
+    'customer_activity' => [
+        'webhook_token' => env('CUSTOMER_ACTIVITY_WEBHOOK_TOKEN'),
+    ],
+
 ];

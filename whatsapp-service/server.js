@@ -55,6 +55,16 @@ function normalizePhone(input) {
   return number;
 }
 
+function normalizeRecipient(input) {
+  const value = String(input || '').trim();
+
+  if (value.endsWith('@g.us') || value.endsWith('@s.whatsapp.net')) {
+    return value;
+  }
+
+  return `${normalizePhone(value)}@s.whatsapp.net`;
+}
+
 function disconnectReasonName(code) {
   return DisconnectReason[code] || `unknown_${code || 'none'}`;
 }
@@ -295,26 +305,52 @@ app.post('/send', async (req, res) => {
       });
     }
 
-    const number = normalizePhone(req.body.to);
+    const recipient = normalizeRecipient(req.body.to);
     const message = String(req.body.message || '').trim();
 
-    if (!number || number.length < 10) {
-      return res.status(422).json({ success: false, message: 'Nomor tujuan tidak valid.' });
+    if (!recipient || (!recipient.endsWith('@g.us') && !recipient.endsWith('@s.whatsapp.net'))) {
+      return res.status(422).json({ success: false, message: 'Tujuan pesan tidak valid.' });
     }
 
     if (!message) {
       return res.status(422).json({ success: false, message: 'Pesan wajib diisi.' });
     }
 
-    await sock.sendMessage(`${number}@s.whatsapp.net`, { text: message });
+    await sock.sendMessage(recipient, { text: message });
 
     res.json({
       success: true,
-      message: `Pesan berhasil dikirim ke ${number}.`,
-      to: number,
+      message: `Pesan berhasil dikirim ke ${recipient}.`,
+      to: recipient,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get('/groups', async (_req, res) => {
+  try {
+    if (!hasActiveSocket()) {
+      return res.status(409).json({
+        success: false,
+        status,
+        groups: [],
+        message: 'WhatsApp belum terhubung. Scan QR terlebih dahulu.',
+      });
+    }
+
+    const groups = await sock.groupFetchAllParticipating();
+    const data = Object.values(groups)
+      .map((group) => ({
+        id: group.id,
+        name: group.subject || group.id,
+        participants_count: Array.isArray(group.participants) ? group.participants.length : 0,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    res.json({ success: true, groups: data });
+  } catch (error) {
+    res.status(500).json({ success: false, groups: [], message: error.message });
   }
 });
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Setting;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
@@ -14,6 +15,9 @@ class WhatsAppController extends Controller
     {
         return view('whatsapp.index', [
             'bridgeUrl' => config('services.whatsapp.bridge_url'),
+            'notificationGroupId' => Setting::get('whatsapp_notification_group_id', ''),
+            'notificationGroupName' => Setting::get('whatsapp_notification_group_name', ''),
+            'notificationEnabled' => Setting::get('whatsapp_pppoe_disconnected_enabled', '1') === '1',
         ]);
     }
 
@@ -25,6 +29,11 @@ class WhatsAppController extends Controller
     public function status(): JsonResponse
     {
         return $this->bridgeGet('/status');
+    }
+
+    public function groups(): JsonResponse
+    {
+        return $this->bridgeGet('/groups');
     }
 
     public function logout(): JsonResponse
@@ -45,6 +54,24 @@ class WhatsAppController extends Controller
         ]);
 
         return $this->bridgePost('/send', $validated);
+    }
+
+    public function saveSettings(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'group_id' => ['nullable', 'string', 'max:120'],
+            'group_name' => ['nullable', 'string', 'max:255'],
+            'enabled' => ['nullable', 'boolean'],
+        ]);
+
+        Setting::set('whatsapp_notification_group_id', $validated['group_id'] ?? '');
+        Setting::set('whatsapp_notification_group_name', $validated['group_name'] ?? '');
+        Setting::set('whatsapp_pppoe_disconnected_enabled', $request->boolean('enabled') ? '1' : '0');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengaturan notifikasi WhatsApp berhasil disimpan.',
+        ]);
     }
 
     private function bridgeGet(string $path): JsonResponse
