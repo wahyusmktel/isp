@@ -38,6 +38,7 @@ return [
     'whatsapp' => [
         'bridge_url' => env('WHATSAPP_BRIDGE_URL', 'http://127.0.0.1:3020'),
         'timeout' => env('WHATSAPP_BRIDGE_TIMEOUT', 10),
+        'command_token' => env('WHATSAPP_COMMAND_TOKEN'),
     ],
 
     'customer_activity' => [

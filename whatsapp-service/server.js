@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import qrcode from 'qrcode';
 import pino from 'pino';
+import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +18,9 @@ const app = express();
 const port = Number(process.env.WHATSAPP_BRIDGE_PORT || 3020);
 const serviceDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(serviceDir, '..');
+
+loadEnvFile(path.resolve(projectRoot, '.env'));
+
 const configuredAuthDir = process.env.WHATSAPP_AUTH_DIR || 'storage/app/whatsapp-session';
 const authDir = path.isAbsolute(configuredAuthDir)
   ? configuredAuthDir
@@ -40,6 +44,31 @@ let reconnectAttempts = 0;
 
 const logger = pino({ level: process.env.WHATSAPP_LOG_LEVEL || 'info' });
 const setupTimeoutMs = Number(process.env.WHATSAPP_SETUP_TIMEOUT_MS || 60000);
+const appUrl = process.env.APP_URL || 'http://127.0.0.1';
+const commandWebhookUrl = process.env.WHATSAPP_COMMAND_WEBHOOK_URL || new URL('/api/whatsapp/bot-command', appUrl).toString();
+const commandToken = process.env.WHATSAPP_COMMAND_TOKEN || '';
+
+function loadEnvFile(filePath) {
+  if (!fsSync.existsSync(filePath)) return;
+
+  const lines = fsSync.readFileSync(filePath, 'utf8').split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue;
+
+    const index = trimmed.indexOf('=');
+    const key = trimmed.slice(0, index).trim();
+    let value = trimmed.slice(index + 1).trim();
+
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+
+    if (!process.env[key]) {
+      process.env[key] = value;
+    }
+  }
+}
 
 function normalizePhone(input) {
   let number = String(input || '').replace(/\D/g, '');
@@ -63,6 +92,19 @@ function normalizeRecipient(input) {
   }
 
   return `${normalizePhone(value)}@s.whatsapp.net`;
+}
+
+function extractMessageText(message) {
+  if (!message) return '';
+
+  return (
+    message.conversation ||
+    message.extendedTextMessage?.text ||
+    message.imageMessage?.caption ||
+    message.videoMessage?.caption ||
+    message.documentMessage?.caption ||
+    ''
+  ).trim();
 }
 
 function disconnectReasonName(code) {
@@ -162,6 +204,13 @@ async function connectWhatsapp() {
     });
 
     sock.ev.on('creds.update', saveCreds);
+    sock.ev.on('messages.upsert', async ({ messages, type }) => {
+      if (type !== 'notify') return;
+
+      for (const message of messages) {
+        await handleIncomingMessage(message);
+      }
+    });
     sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
       lastConnectionUpdate = {
@@ -228,6 +277,45 @@ async function connectWhatsapp() {
   });
 
   return connecting;
+}
+
+async function handleIncomingMessage(message) {
+  try {
+    const groupId = message.key?.remoteJid || '';
+    if (!groupId.endsWith('@g.us') || message.key?.fromMe) return;
+
+    const text = extractMessageText(message.message);
+    if (!text.startsWith('/')) return;
+
+    console.log(`WhatsApp command received from ${groupId}: ${text}`);
+
+    const response = await fetch(commandWebhookUrl, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        ...(commandToken ? { 'X-Command-Token': commandToken } : {}),
+      },
+      body: JSON.stringify({
+        group_id: groupId,
+        sender: message.key?.participant || '',
+        message: text,
+        token: commandToken,
+      }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      console.warn('WhatsApp command webhook failed:', response.status, data);
+      return;
+    }
+
+    if (data.reply && hasActiveSocket()) {
+      await sock.sendMessage(groupId, { text: data.reply }, { quoted: message });
+    }
+  } catch (error) {
+    console.warn('WhatsApp command handling failed:', error.message);
+  }
 }
 
 function startConnect() {
