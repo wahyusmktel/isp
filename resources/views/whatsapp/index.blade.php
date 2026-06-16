@@ -114,10 +114,10 @@
 @push('scripts')
 <script>
 const WA_ROUTES = {
-    status: @json(route('whatsapp.status')),
-    connect: @json(route('whatsapp.connect')),
-    logout: @json(route('whatsapp.logout')),
-    test: @json(route('whatsapp.test-message')),
+    status: @json(url('/whatsapp/status', [], false)),
+    connect: @json(url('/whatsapp/connect', [], false)),
+    logout: @json(url('/whatsapp/logout', [], false)),
+    test: @json(url('/whatsapp/test-message', [], false)),
 };
 const WA_CSRF = document.querySelector('meta[name="csrf-token"]').content;
 let waPoll = null;
@@ -136,7 +136,8 @@ function setStatusPill(state) {
 
 function renderStatus(data) {
     setStatusPill(data);
-    document.getElementById('status-message').textContent = data.message || 'Status tidak diketahui.';
+    const suffix = data.connecting_for_seconds ? ` (${data.connecting_for_seconds} detik)` : '';
+    document.getElementById('status-message').textContent = (data.message || 'Status tidak diketahui.') + suffix;
     document.getElementById('connected-number').textContent = data.number || '-';
 
     const qrImage = document.getElementById('qr-image');

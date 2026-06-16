@@ -22,8 +22,10 @@ let status = 'starting';
 let lastError = null;
 let connectedNumber = null;
 let connecting = null;
+let connectStartedAt = null;
 
 const logger = pino({ level: process.env.WHATSAPP_LOG_LEVEL || 'silent' });
+const setupTimeoutMs = Number(process.env.WHATSAPP_SETUP_TIMEOUT_MS || 60000);
 
 function normalizePhone(input) {
   let number = String(input || '').replace(/\D/g, '');
@@ -44,7 +46,17 @@ async function connectWhatsapp() {
 
   connecting = (async () => {
     status = sock ? status : 'connecting';
+    connectStartedAt = Date.now();
     lastError = null;
+
+    console.log(`Preparing WhatsApp session in ${authDir}`);
+
+    const setupTimeout = setTimeout(() => {
+      if (status === 'connecting') {
+        lastError = 'QR belum muncul. Cek koneksi internet server dan log PM2 WhatsApp bridge.';
+        status = 'error';
+      }
+    }, setupTimeoutMs);
 
     const { state, saveCreds } = await useMultiFileAuthState(authDir);
     const { version } = await fetchLatestBaileysVersion();
@@ -62,6 +74,7 @@ async function connectWhatsapp() {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
+        clearTimeout(setupTimeout);
         qrText = qr;
         qrImage = await qrcode.toDataURL(qr, {
           margin: 1,
@@ -72,6 +85,7 @@ async function connectWhatsapp() {
       }
 
       if (connection === 'open') {
+        clearTimeout(setupTimeout);
         qrText = null;
         qrImage = null;
         status = 'connected';
@@ -79,6 +93,7 @@ async function connectWhatsapp() {
       }
 
       if (connection === 'close') {
+        clearTimeout(setupTimeout);
         const code = lastDisconnect?.error?.output?.statusCode;
         const loggedOut = code === DisconnectReason.loggedOut;
 
@@ -103,6 +118,14 @@ async function connectWhatsapp() {
   return connecting;
 }
 
+function startConnect() {
+  connectWhatsapp().catch((error) => {
+    console.error('WhatsApp connect failed:', error);
+    lastError = error.message;
+    status = 'error';
+  });
+}
+
 function currentState() {
   return {
     success: true,
@@ -112,6 +135,9 @@ function currentState() {
     number: connectedNumber,
     message: statusMessage(),
     last_error: lastError,
+    connecting_for_seconds: connectStartedAt && status === 'connecting'
+      ? Math.round((Date.now() - connectStartedAt) / 1000)
+      : null,
   };
 }
 
@@ -119,7 +145,7 @@ function statusMessage() {
   if (status === 'connected') return 'WhatsApp terhubung.';
   if (status === 'qr') return 'Scan QR dengan WhatsApp untuk menghubungkan perangkat.';
   if (status === 'logged_out') return 'Sesi WhatsApp keluar. Mulai ulang koneksi untuk QR baru.';
-  if (status === 'error') return 'Service WhatsApp mengalami error.';
+  if (status === 'error') return lastError || 'Service WhatsApp mengalami error.';
   if (status === 'connecting' || status === 'starting') return 'Service sedang menyiapkan koneksi.';
   return 'WhatsApp belum terhubung.';
 }
@@ -128,23 +154,18 @@ app.get('/health', (_req, res) => {
   res.json({ success: true, service: 'whatsapp-bridge', status });
 });
 
-app.post('/connect', async (_req, res) => {
-  try {
-    await connectWhatsapp();
-    res.json(currentState());
-  } catch (error) {
-    lastError = error.message;
-    status = 'error';
-    res.status(500).json({ success: false, message: error.message });
+app.post('/connect', (_req, res) => {
+  if (!sock || ['error', 'disconnected', 'logged_out', 'starting'].includes(status)) {
+    status = 'connecting';
+    startConnect();
   }
+
+  res.json(currentState());
 });
 
-app.get('/status', async (_req, res) => {
+app.get('/status', (_req, res) => {
   if (!sock && status !== 'logged_out') {
-    connectWhatsapp().catch((error) => {
-      lastError = error.message;
-      status = 'error';
-    });
+    startConnect();
   }
 
   res.json(currentState());
@@ -201,9 +222,6 @@ app.post('/logout', async (_req, res) => {
 });
 
 app.listen(port, () => {
-  connectWhatsapp().catch((error) => {
-    lastError = error.message;
-    status = 'error';
-  });
+  startConnect();
   console.log(`WhatsApp bridge listening on http://127.0.0.1:${port}`);
 });
