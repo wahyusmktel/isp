@@ -114,10 +114,10 @@
 @push('scripts')
 <script>
 const WA_ROUTES = {
-    status: @json(url('/whatsapp/status', [], false)),
-    connect: @json(url('/whatsapp/connect', [], false)),
-    logout: @json(url('/whatsapp/logout', [], false)),
-    test: @json(url('/whatsapp/test-message', [], false)),
+    status: @json('/whatsapp/status'),
+    connect: @json('/whatsapp/connect'),
+    logout: @json('/whatsapp/logout'),
+    test: @json('/whatsapp/test-message'),
 };
 const WA_CSRF = document.querySelector('meta[name="csrf-token"]').content;
 let waPoll = null;
