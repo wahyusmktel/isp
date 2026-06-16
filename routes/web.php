@@ -53,6 +53,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/whatsapp/status', [\App\Http\Controllers\WhatsAppController::class, 'status'])->name('whatsapp.status');
     Route::post('/whatsapp/connect', [\App\Http\Controllers\WhatsAppController::class, 'connect'])->name('whatsapp.connect');
     Route::post('/whatsapp/logout', [\App\Http\Controllers\WhatsAppController::class, 'logout'])->name('whatsapp.logout');
+    Route::post('/whatsapp/reset', [\App\Http\Controllers\WhatsAppController::class, 'reset'])->name('whatsapp.reset');
     Route::post('/whatsapp/test-message', [\App\Http\Controllers\WhatsAppController::class, 'sendTest'])->name('whatsapp.test-message');
 
     Route::get('/packages', [\App\Http\Controllers\PackageController::class, 'index'])->name('packages.index');

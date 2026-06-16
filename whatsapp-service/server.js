@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import qrcode from 'qrcode';
 import pino from 'pino';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import makeWASocket, {
   DisconnectReason,
   fetchLatestBaileysVersion,
@@ -10,7 +13,12 @@ import makeWASocket, {
 
 const app = express();
 const port = Number(process.env.WHATSAPP_BRIDGE_PORT || 3020);
-const authDir = process.env.WHATSAPP_AUTH_DIR || 'storage/app/whatsapp-session';
+const serviceDir = path.dirname(fileURLToPath(import.meta.url));
+const projectRoot = path.resolve(serviceDir, '..');
+const configuredAuthDir = process.env.WHATSAPP_AUTH_DIR || 'storage/app/whatsapp-session';
+const authDir = path.isAbsolute(configuredAuthDir)
+  ? configuredAuthDir
+  : path.resolve(projectRoot, configuredAuthDir);
 
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
@@ -49,6 +57,30 @@ function disconnectReasonName(code) {
 
 function hasActiveSocket() {
   return Boolean(sock && status === 'connected');
+}
+
+async function closeSocket() {
+  if (sock) {
+    try {
+      sock.end?.();
+    } catch (error) {
+      console.warn('Failed to close WhatsApp socket cleanly:', error.message);
+    }
+  }
+
+  sock = null;
+}
+
+function clearRuntimeState(nextStatus = 'disconnected') {
+  qrText = null;
+  qrImage = null;
+  connectedNumber = null;
+  connecting = null;
+  connectStartedAt = null;
+  lastDisconnectCode = null;
+  lastConnectionUpdate = null;
+  lastError = null;
+  status = nextStatus;
 }
 
 async function connectWhatsapp() {
@@ -130,6 +162,7 @@ async function connectWhatsapp() {
           connectedNumber = null;
           qrText = null;
           qrImage = null;
+          lastError = 'WhatsApp menolak sesi ini. Reset sesi lalu scan QR baru.';
         }
 
         if (!loggedOut) {
@@ -164,6 +197,7 @@ function currentState() {
     connected: status === 'connected',
     qr: qrImage,
     number: connectedNumber,
+    auth_dir: authDir,
     message: statusMessage(),
     last_error: lastError,
     last_disconnect_code: lastDisconnectCode,
@@ -178,7 +212,7 @@ function currentState() {
 function statusMessage() {
   if (status === 'connected') return 'WhatsApp terhubung.';
   if (status === 'qr') return 'Scan QR dengan WhatsApp untuk menghubungkan perangkat.';
-  if (status === 'logged_out') return 'Sesi WhatsApp keluar. Mulai ulang koneksi untuk QR baru.';
+  if (status === 'logged_out') return lastError || 'Sesi WhatsApp keluar. Reset sesi lalu scan QR baru.';
   if (status === 'error') return lastError || 'Service WhatsApp mengalami error.';
   if (status === 'connecting' || status === 'starting') return 'WhatsApp sedang menyelesaikan koneksi. Tunggu sampai status Terhubung.';
   return 'WhatsApp belum terhubung.';
@@ -255,6 +289,29 @@ app.post('/logout', async (_req, res) => {
     res.json({ success: true, message: 'Sesi WhatsApp berhasil diputus.' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post('/reset', async (_req, res) => {
+  try {
+    await closeSocket();
+    clearRuntimeState('resetting');
+    await fs.rm(authDir, { recursive: true, force: true });
+    console.log(`WhatsApp auth session reset: ${authDir}`);
+    status = 'connecting';
+    startConnect();
+
+    res.json({
+      success: true,
+      status,
+      connected: false,
+      message: 'Sesi WhatsApp direset. QR baru sedang disiapkan.',
+      auth_dir: authDir,
+    });
+  } catch (error) {
+    lastError = error.message;
+    status = 'error';
+    res.status(500).json({ success: false, status, message: error.message, auth_dir: authDir });
   }
 });
 

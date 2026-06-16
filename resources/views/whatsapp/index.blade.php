@@ -79,6 +79,12 @@
                         </svg>
                         Putuskan Sesi
                     </button>
+                    <button type="button" onclick="resetWhatsapp()" class="ml-2 inline-flex items-center gap-2 rounded-xl bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M20 8A8 8 0 006.34 4.34M4 16a8 8 0 0013.66 3.66"/>
+                        </svg>
+                        Reset Sesi
+                    </button>
                 </div>
             </div>
         </section>
@@ -117,6 +123,7 @@ const WA_ROUTES = {
     status: @json('/whatsapp/status'),
     connect: @json('/whatsapp/connect'),
     logout: @json('/whatsapp/logout'),
+    reset: @json('/whatsapp/reset'),
     test: @json('/whatsapp/test-message'),
 };
 const WA_CSRF = document.querySelector('meta[name="csrf-token"]').content;
@@ -185,6 +192,13 @@ async function connectWhatsapp() {
 async function logoutWhatsapp() {
     if (!confirm('Putuskan sesi WhatsApp dari aplikasi ini?')) return;
     const data = await requestJson(WA_ROUTES.logout, { method: 'POST', body: '{}' });
+    renderStatus(data);
+}
+
+async function resetWhatsapp() {
+    if (!confirm('Reset sesi akan menghapus QR/session lama dan meminta scan ulang. Lanjutkan?')) return;
+    renderStatus({ status: 'connecting', message: 'Mereset sesi WhatsApp...', connected: false });
+    const data = await requestJson(WA_ROUTES.reset, { method: 'POST', body: '{}' });
     renderStatus(data);
 }
 

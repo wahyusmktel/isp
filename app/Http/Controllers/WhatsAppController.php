@@ -32,6 +32,11 @@ class WhatsAppController extends Controller
         return $this->bridgePost('/logout');
     }
 
+    public function reset(): JsonResponse
+    {
+        return $this->bridgePost('/reset');
+    }
+
     public function sendTest(Request $request): JsonResponse
     {
         $validated = $request->validate([
