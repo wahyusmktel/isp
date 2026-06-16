@@ -139,6 +139,9 @@ function renderStatus(data) {
     const suffix = data.connecting_for_seconds ? ` (${data.connecting_for_seconds} detik)` : '';
     document.getElementById('status-message').textContent = (data.message || 'Status tidak diketahui.') + suffix;
     document.getElementById('connected-number').textContent = data.number || '-';
+    document.getElementById('btn-send').disabled = data.connected !== true;
+    document.getElementById('btn-send').classList.toggle('opacity-60', data.connected !== true);
+    document.getElementById('btn-send').classList.toggle('cursor-not-allowed', data.connected !== true);
 
     const qrImage = document.getElementById('qr-image');
     const qrEmpty = document.getElementById('qr-empty');
