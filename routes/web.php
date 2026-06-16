@@ -33,7 +33,8 @@ Route::post('/customer/tickets', [\App\Http\Controllers\CustomerTicketController
 
 Route::post('/customers/activities/webhook', [\App\Http\Controllers\CustomerActivityController::class, 'webhook'])
     ->name('customers.activities.webhook')
-    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance::class])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class]);
 
 // ─── Authenticated (harus login) ─────────────────────────────────────────────
 Route::middleware('auth')->group(function () {

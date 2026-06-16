@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\MobileCustomerController;
+use App\Http\Controllers\CustomerActivityController;
 use Illuminate\Support\Facades\Route;
+
+Route::post('/customers/activities/webhook', [CustomerActivityController::class, 'webhook']);
 
 Route::prefix('mobile')->group(function () {
     Route::post('/customer/login', [MobileCustomerController::class, 'login']);
