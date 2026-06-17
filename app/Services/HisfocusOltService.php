@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Setting;
 use DOMDocument;
 use DOMXPath;
+use GuzzleHttp\Cookie\CookieJar;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
@@ -24,7 +25,7 @@ class HisfocusOltService
 
         $session = Http::timeout($this->timeout())
             ->accept('text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8')
-            ->withOptions(['cookies' => true]);
+            ->withOptions(['cookies' => new CookieJar]);
 
         if (filled($this->username())) {
             $session->withBasicAuth($this->username(), $this->password());
