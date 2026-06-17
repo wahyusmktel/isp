@@ -232,12 +232,12 @@ class CustomerController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Pelanggan belum memiliki ACS Device ID.',
-            ], 422);
+            ]);
         }
 
         $result = $genieAcs->deviceInfo($customer->acs_device_id);
 
-        return response()->json($result, $result['success'] ? 200 : 422);
+        return response()->json($result);
     }
 
     public function generateDummy(Request $request): JsonResponse
