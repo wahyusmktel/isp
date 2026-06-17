@@ -203,7 +203,7 @@ document.getElementById('isolation-settings').addEventListener('submit', async (
     const btn = form.querySelector('button[type="submit"]');
     btn.disabled = true;
     try {
-        const res = await fetch('{{ route('isolation.settings') }}', {
+        const res = await fetch('/isolir/settings', {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             body: new FormData(form),
@@ -226,7 +226,7 @@ async function releaseCustomer(id, btn) {
 }
 
 async function runAutoIsolation() {
-    await isolationRequest('{{ route('isolation.run_auto') }}', 'POST', null);
+    await isolationRequest('/isolir/run-auto', 'POST', null);
 }
 
 async function isolationRequest(url, method, btn) {
