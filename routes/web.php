@@ -2,6 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 
+Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
+Route::get('/robots.txt', [\App\Http\Controllers\SitemapController::class, 'robots'])->name('robots');
+
 Route::get('/', function () {
     return view('welcome');
 });
