@@ -1338,6 +1338,64 @@ async function executeDelete() {
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
+// Copy IP address buttons
+function enhanceIpCopyButtons() {
+    document.querySelectorAll('#cust-tbody tr[data-cust-row] td:nth-child(2) p.font-mono').forEach(ipEl => {
+        if (ipEl.dataset.copyEnhanced === '1') return;
+
+        const ip = ipEl.textContent.trim();
+        if (!ip || ip === '-' || ip.includes('â') || ip.includes('—')) return;
+
+        ipEl.dataset.copyEnhanced = '1';
+        ipEl.classList.add('inline-flex', 'items-center', 'gap-1.5');
+        ipEl.innerHTML = `
+            <span>${esc(ip)}</span>
+            <button type="button"
+                    onclick="copyIpAddress('${esc(ip)}', this)"
+                    class="w-6 h-6 rounded-lg text-gray-300 hover:text-green-600 hover:bg-green-50 flex items-center justify-center transition-colors"
+                    title="Copy IP Address">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+            </button>`;
+    });
+}
+
+async function copyIpAddress(ip, button) {
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(ip);
+        } else {
+            const textarea = document.createElement('textarea');
+            textarea.value = ip;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            textarea.remove();
+        }
+
+        if (button) {
+            button.classList.remove('text-gray-300');
+            button.classList.add('text-green-600', 'bg-green-50');
+            setTimeout(() => {
+                button.classList.add('text-gray-300');
+                button.classList.remove('text-green-600', 'bg-green-50');
+            }, 1200);
+        }
+        showToast('success', `IP ${ip} disalin.`);
+    } catch {
+        showToast('error', 'Gagal menyalin IP address.');
+    }
+}
+
+enhanceIpCopyButtons();
+new MutationObserver(enhanceIpCopyButtons).observe(document.getElementById('cust-tbody'), {
+    childList: true,
+    subtree: true,
+});
+
 function showToast(type, message) {
     const container = document.getElementById('toast-container');
     const icons = {
