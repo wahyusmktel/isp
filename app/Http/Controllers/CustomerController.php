@@ -226,6 +226,20 @@ class CustomerController extends Controller
         ]);
     }
 
+    public function ontInfo(Customer $customer, GenieAcsService $genieAcs): JsonResponse
+    {
+        if (blank($customer->acs_device_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pelanggan belum memiliki ACS Device ID.',
+            ], 422);
+        }
+
+        $result = $genieAcs->deviceInfo($customer->acs_device_id);
+
+        return response()->json($result, $result['success'] ? 200 : 422);
+    }
+
     public function generateDummy(Request $request): JsonResponse
     {
         $request->validate([

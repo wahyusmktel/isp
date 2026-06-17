@@ -104,12 +104,59 @@
         </div>
 
         <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Manajemen WiFi ONT</h3>
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Manajemen WiFi ONT</h3>
+                <button type="button" id="ont-refresh-btn"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-60"
+                        {{ empty($customer->acs_device_id) ? 'disabled' : '' }}>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0119 5M19 5h-5M5 19h5"/>
+                    </svg>
+                    Refresh
+                </button>
+            </div>
             @if(empty($customer->acs_device_id))
                 <div class="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-xl p-4">
                     Isi ACS Device ID pelanggan ini dari halaman edit pelanggan sebelum mengirim perintah TR-069.
                 </div>
             @endif
+
+            <div id="ont-optical-card" class="rounded-xl border border-gray-100 bg-gray-50 p-4 mb-4">
+                <div class="flex items-start justify-between gap-3 mb-3">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Informasi Optik ONT</p>
+                        <p id="ont-info-status" class="text-[11px] text-gray-400 mt-0.5">Memuat data dari GenieACS...</p>
+                    </div>
+                    <span id="ont-rx-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500">-</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <p class="text-[10px] text-gray-400">RX Power</p>
+                        <p id="ont-rx-power" class="text-sm font-bold text-gray-900 font-mono">-</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-gray-400">TX Power</p>
+                        <p id="ont-tx-power" class="text-sm font-bold text-gray-900 font-mono">-</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-gray-400">Temperature</p>
+                        <p id="ont-temperature" class="text-sm font-bold text-gray-900 font-mono">-</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-gray-400">Voltage</p>
+                        <p id="ont-voltage" class="text-sm font-bold text-gray-900 font-mono">-</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-gray-400">Bias Current</p>
+                        <p id="ont-bias-current" class="text-sm font-bold text-gray-900 font-mono">-</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-gray-400">PON Status</p>
+                        <p id="ont-pon-status" class="text-sm font-bold text-gray-900 truncate">-</p>
+                    </div>
+                </div>
+            </div>
+
             <form id="wifi-form" class="space-y-4 mt-{{ empty($customer->acs_device_id) ? '4' : '0' }}">
                 @csrf
                 <div>
@@ -201,6 +248,83 @@ document.addEventListener("DOMContentLoaded", function() {
     const wifiMessage = document.getElementById('wifi-message');
     const wifiBtn = document.getElementById('wifi-save-btn');
     const wifiBtnText = document.getElementById('wifi-save-text');
+    const ontRefreshBtn = document.getElementById('ont-refresh-btn');
+
+    function setText(id, value, unit = '') {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = value === null || value === undefined || value === '' ? '-' : `${value}${unit}`;
+    }
+
+    function formatVoltage(value) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return value;
+        return number > 1000 ? `${(number / 1000000).toFixed(2)} V` : `${number} V`;
+    }
+
+    function rxQuality(rxPower) {
+        const value = Number(rxPower);
+        if (!Number.isFinite(value)) {
+            return { label: '-', cls: 'bg-gray-100 text-gray-500' };
+        }
+
+        if (value >= -24 && value <= -8) {
+            return { label: 'Bagus', cls: 'bg-green-50 text-green-700' };
+        }
+
+        if (value >= -27 && value < -24) {
+            return { label: 'Sedang', cls: 'bg-amber-50 text-amber-700' };
+        }
+
+        return { label: 'Buruk', cls: 'bg-red-50 text-red-700' };
+    }
+
+    async function fetchOntInfo() {
+        const statusEl = document.getElementById('ont-info-status');
+        const badgeEl = document.getElementById('ont-rx-badge');
+
+        if (!ontRefreshBtn || ontRefreshBtn.disabled) {
+            statusEl.textContent = 'ACS Device ID belum diisi.';
+            return;
+        }
+
+        ontRefreshBtn.disabled = true;
+        statusEl.textContent = 'Mengambil data dari GenieACS...';
+
+        try {
+            const response = await fetch('{{ route('customers.ont_info', $customer->id) }}', {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+            });
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                statusEl.textContent = data.message || 'Gagal mengambil data ONT.';
+                return;
+            }
+
+            const optical = data.optical || {};
+            setText('ont-rx-power', optical.rx_power, ' dBm');
+            setText('ont-tx-power', optical.tx_power, ' dBm');
+            setText('ont-temperature', optical.temperature, ' °C');
+            setText('ont-voltage', formatVoltage(optical.supply_voltage));
+            setText('ont-bias-current', optical.bias_current, ' uA');
+            setText('ont-pon-status', optical.pon_status);
+
+            const quality = rxQuality(optical.rx_power);
+            badgeEl.textContent = quality.label;
+            badgeEl.className = `inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${quality.cls}`;
+            statusEl.textContent = 'Data terakhir dari GenieACS.';
+        } catch (err) {
+            statusEl.textContent = 'Koneksi ke aplikasi bermasalah.';
+        } finally {
+            ontRefreshBtn.disabled = {{ empty($customer->acs_device_id) ? 'true' : 'false' }};
+        }
+    }
+
+    ontRefreshBtn?.addEventListener('click', fetchOntInfo);
 
     function showWifiMessage(type, message) {
         wifiMessage.textContent = message;
@@ -247,6 +371,8 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
     // ─── Setup Traffic Chart (Live Simulation) ───
+    fetchOntInfo();
+
     const ctxTraffic = document.getElementById('trafficChart').getContext('2d');
     
     // Gradient configs
