@@ -173,7 +173,7 @@ class GenieAcsService
     private function opticalInfo(array $parameters): array
     {
         return [
-            'rx_power' => $this->firstParameterByNeedles($parameters, [
+            'rx_power' => $this->firstOpticalParameterByNeedles($parameters, [
                 ['rxpower'],
                 ['rx', 'power'],
                 ['optical', 'input', 'power'],
@@ -181,7 +181,7 @@ class GenieAcsService
                 ['receive', 'power'],
                 ['pon', 'rx', 'power'],
             ]),
-            'tx_power' => $this->firstParameterByNeedles($parameters, [
+            'tx_power' => $this->firstOpticalParameterByNeedles($parameters, [
                 ['txpower'],
                 ['tx', 'power'],
                 ['optical', 'output', 'power'],
@@ -189,23 +189,23 @@ class GenieAcsService
                 ['transmit', 'power'],
                 ['pon', 'tx', 'power'],
             ]),
-            'supply_voltage' => $this->firstParameterByNeedles($parameters, [
+            'supply_voltage' => $this->firstOpticalParameterByNeedles($parameters, [
                 ['supplyvoltage'],
                 ['supply', 'voltage'],
                 ['optic', 'voltage'],
             ]),
-            'bias_current' => $this->firstParameterByNeedles($parameters, [
+            'bias_current' => $this->firstOpticalParameterByNeedles($parameters, [
                 ['biascurrent'],
                 ['bias', 'current'],
                 ['transmitter', 'current'],
             ]),
-            'temperature' => $this->firstParameterByNeedles($parameters, [
+            'temperature' => $this->firstOpticalParameterByNeedles($parameters, [
                 ['temperature'],
                 ['operating', 'temperature'],
                 ['optic', 'temperature'],
                 ['module', 'temperature'],
             ]),
-            'pon_status' => $this->firstParameterByNeedles($parameters, [
+            'pon_status' => $this->firstOpticalParameterByNeedles($parameters, [
                 ['eponstate'],
                 ['epon', 'state'],
                 ['gpon', 'state'],
@@ -248,6 +248,32 @@ class GenieAcsService
         foreach ($paths as $path) {
             if (array_key_exists($path, $parameters)) {
                 return $parameters[$path];
+            }
+        }
+
+        return null;
+    }
+
+    private function firstOpticalParameterByNeedles(array $parameters, array $needleGroups): mixed
+    {
+        $opticalContext = ['optical', 'optic', 'wanpon', 'wanepon', 'pon', 'epon', 'gpon'];
+
+        foreach ($needleGroups as $needles) {
+            foreach ($parameters as $path => $value) {
+                $normalizedPath = Str::lower(str_replace(['_', '-', '.'], ' ', $path));
+                $compactPath = str_replace(' ', '', $normalizedPath);
+
+                $hasOpticalContext = collect($opticalContext)->contains(
+                    fn (string $context) => str_contains($normalizedPath, $context) || str_contains($compactPath, $context)
+                );
+
+                if (! $hasOpticalContext || str_contains($normalizedPath, 'wlan')) {
+                    continue;
+                }
+
+                if (collect($needles)->every(fn (string $needle) => str_contains($normalizedPath, Str::lower($needle)) || str_contains($compactPath, Str::lower($needle)))) {
+                    return $value;
+                }
             }
         }
 

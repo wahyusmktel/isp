@@ -316,7 +316,7 @@ document.addEventListener("DOMContentLoaded", function() {
             badgeEl.className = `inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${quality.cls}`;
             statusEl.textContent = data.has_optical_data
                 ? `Data terakhir dari ${data.source === 'olt' ? 'OLT HisFocus' : 'GenieACS'}.`
-                : 'Parameter optik belum tersedia di GenieACS. Klik Refresh, lalu coba lagi beberapa detik.';
+                : (data.fallback_message || 'Data optik belum ditemukan. Pastikan ONU ID atau MAC ONT pelanggan sesuai tabel OLT.');
         } catch (err) {
             statusEl.textContent = 'Koneksi ke aplikasi bermasalah.';
         } finally {

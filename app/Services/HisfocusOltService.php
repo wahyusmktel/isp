@@ -122,7 +122,7 @@ class HisfocusOltService
                 return $row;
             }
 
-            if (filled($customer->mac_ont) && $this->sameMac($customer->mac_ont, $mac)) {
+            if (filled($customer->mac_ont) && $this->sameMacFamily($customer->mac_ont, $mac)) {
                 return $row;
             }
         }
@@ -204,11 +204,17 @@ class HisfocusOltService
         return filled($first) && filled($second) && Str::lower(trim($first)) === Str::lower(trim($second));
     }
 
-    private function sameMac(?string $first, ?string $second): bool
+    private function sameMacFamily(?string $first, ?string $second): bool
     {
         $normalize = fn (?string $mac) => Str::lower(preg_replace('/[^a-fA-F0-9]/', '', (string) $mac));
+        $first = $normalize($first);
+        $second = $normalize($second);
 
-        return filled($first) && filled($second) && $normalize($first) === $normalize($second);
+        if (blank($first) || blank($second)) {
+            return false;
+        }
+
+        return $first === $second || substr($first, 0, 10) === substr($second, 0, 10);
     }
 
     private function absoluteUrl(string $url): string
