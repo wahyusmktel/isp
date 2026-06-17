@@ -489,6 +489,21 @@ $statusCfg = [
                                 <input type="text" id="f-onu" name="onu_id" placeholder="cth. HWTC12345678"
                                        class="inp w-full font-mono text-sm">
                             </div>
+                            <div>
+                                <label class="lbl">ACS Device ID</label>
+                                <input type="text" id="f-acs-device" name="acs_device_id" placeholder="ID device di GenieACS"
+                                       class="inp w-full font-mono text-sm">
+                            </div>
+                            <div>
+                                <label class="lbl">Serial Number ONT</label>
+                                <input type="text" id="f-ont-serial" name="ont_serial_number" placeholder="cth. ZICG298C94AE"
+                                       class="inp w-full font-mono text-sm">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="lbl">Nama WiFi Terakhir</label>
+                                <input type="text" id="f-wifi-ssid" name="wifi_ssid" placeholder="SSID yang tercatat di aplikasi"
+                                       class="inp w-full">
+                            </div>
                         </div>
                     </div>
 
@@ -1126,6 +1141,9 @@ function openModal(mode, cust = null) {
         document.getElementById('f-ip').value      = cust.ip_address || '';
         document.getElementById('f-pppoe').value   = cust.pppoe_user || '';
         document.getElementById('f-onu').value     = cust.onu_id || '';
+        document.getElementById('f-acs-device').value = cust.acs_device_id || '';
+        document.getElementById('f-ont-serial').value = cust.ont_serial_number || '';
+        document.getElementById('f-wifi-ssid').value = cust.wifi_ssid || '';
         document.getElementById('f-notes').value   = cust.notes || '';
         document.getElementById('f-billing-date').value = cust.billing_date || 1;
         document.getElementById('f-lat').value     = cust.latitude != null ? cust.latitude : '';

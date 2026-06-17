@@ -263,6 +263,46 @@ $s = fn(string $key, string $default = '') => $settings[$key] ?? $default;
                     <input type="text" name="contention" value="{{ $s('contention', '1:8') }}"
                            class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
                 </div>
+                <div class="lg:col-span-3 pt-2 border-t border-gray-100">
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Integrasi GenieACS</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Dipakai aplikasi untuk mengirim task TR-069 ke ONT pelanggan</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                        <div class="lg:col-span-2">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">GenieACS NBI URL</label>
+                            <input type="url" name="genieacs_nbi_url" value="{{ $s('genieacs_nbi_url', 'http://127.0.0.1:7557') }}" placeholder="http://IP-SERVER-ACS:7557"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">API Token</label>
+                            <input type="password" name="genieacs_api_token" value="{{ $s('genieacs_api_token') }}" placeholder="Opsional"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                        </div>
+                        <div class="lg:col-span-3">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Parameter SSID</label>
+                            <input type="text" name="genieacs_wifi_ssid_parameter" value="{{ $s('genieacs_wifi_ssid_parameter', 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID') }}"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white font-mono">
+                        </div>
+                        <div class="lg:col-span-3">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Parameter Password WiFi</label>
+                            <input type="text" name="genieacs_wifi_password_parameter" value="{{ $s('genieacs_wifi_password_parameter', 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.PreSharedKey.1.KeyPassphrase') }}"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">HTTP Timeout (detik)</label>
+                            <input type="number" name="genieacs_http_timeout" value="{{ $s('genieacs_http_timeout', '15') }}" min="3" max="120"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Task Timeout (ms)</label>
+                            <input type="number" name="genieacs_task_timeout" value="{{ $s('genieacs_task_timeout', '5000') }}" min="1000" step="500"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

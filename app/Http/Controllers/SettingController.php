@@ -10,9 +10,13 @@ class SettingController extends Controller
 {
     private array $tabFields = [
         'identitas' => ['company_name', 'brand_name', 'npwp', 'license_no', 'founded_year', 'address', 'description'],
-        'kontak'    => ['phone', 'whatsapp', 'support_hours', 'email', 'billing_email', 'website'],
-        'tagihan'   => ['billing_date', 'grace_period', 'late_fee', 'bank_account', 'currency', 'ewallet', 'custom_billing_enabled'],
-        'jaringan'  => ['network_type', 'upstream', 'total_bandwidth', 'ip_range', 'dns', 'contention'],
+        'kontak' => ['phone', 'whatsapp', 'support_hours', 'email', 'billing_email', 'website'],
+        'tagihan' => ['billing_date', 'grace_period', 'late_fee', 'bank_account', 'currency', 'ewallet', 'custom_billing_enabled'],
+        'jaringan' => [
+            'network_type', 'upstream', 'total_bandwidth', 'ip_range', 'dns', 'contention',
+            'genieacs_nbi_url', 'genieacs_api_token', 'genieacs_wifi_ssid_parameter',
+            'genieacs_wifi_password_parameter', 'genieacs_http_timeout', 'genieacs_task_timeout',
+        ],
     ];
 
     public function index(Request $request)
@@ -45,15 +49,15 @@ class SettingController extends Controller
 
         $tabLabels = [
             'identitas' => 'Identitas Perusahaan',
-            'kontak'    => 'Kontak & Dukungan',
-            'tagihan'   => 'Konfigurasi Tagihan',
-            'jaringan'  => 'Informasi Jaringan',
+            'kontak' => 'Kontak & Dukungan',
+            'tagihan' => 'Konfigurasi Tagihan',
+            'jaringan' => 'Informasi Jaringan',
         ];
 
         return response()->json([
             'success' => true,
             'message' => "Pengaturan {$tabLabels[$tab]} berhasil disimpan.",
-            'tab'     => $tab,
+            'tab' => $tab,
         ]);
     }
 }

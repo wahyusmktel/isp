@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Package;
+use App\Models\Router;
+use App\Services\GenieAcsService;
+use App\Services\MikrotikService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,9 +24,9 @@ class CustomerController extends Controller
             ->get(['id', 'name', 'category', 'price']);
 
         $stats = [
-            'total'     => $customers->count(),
-            'aktif'     => $customers->where('status', 'aktif')->count(),
-            'suspend'   => $customers->where('status', 'suspend')->count(),
+            'total' => $customers->count(),
+            'aktif' => $customers->where('status', 'aktif')->count(),
+            'suspend' => $customers->where('status', 'suspend')->count(),
             'terminate' => $customers->where('status', 'terminate')->count(),
         ];
 
@@ -33,6 +36,7 @@ class CustomerController extends Controller
     public function show(Customer $customer)
     {
         $customer->load('package');
+
         return view('customers.show', compact('customer'));
     }
 
@@ -53,38 +57,38 @@ class CustomerController extends Controller
         return response()->json($customers);
     }
 
-    public function liveTraffic(Customer $customer, \App\Services\MikrotikService $mikrotik)
+    public function liveTraffic(Customer $customer, MikrotikService $mikrotik)
     {
         if (empty($customer->pppoe_user)) {
             return response()->json([
-                'success' => false, 
-                'message' => 'Pelanggan belum dimaping PPPoE akun nya.'
+                'success' => false,
+                'message' => 'Pelanggan belum dimaping PPPoE akun nya.',
             ]);
         }
 
-        $router = \App\Models\Router::where('status', 'online')->first();
-        if (!$router) {
-            $router = \App\Models\Router::first();
+        $router = Router::where('status', 'online')->first();
+        if (! $router) {
+            $router = Router::first();
         }
 
-        if (!$router) {
+        if (! $router) {
             return response()->json([
-                'success' => false, 
-                'message' => 'Router belum dikonfigurasi.'
+                'success' => false,
+                'message' => 'Router belum dikonfigurasi.',
             ]);
         }
 
         $conn = $mikrotik->connect($router->host, $router->api_port, $router->username, $router->password);
-        if (!$conn['success']) {
+        if (! $conn['success']) {
             return response()->json([
-                'success' => false, 
-                'message' => 'Gagal terhubung ke Mikrotik.'
+                'success' => false,
+                'message' => 'Gagal terhubung ke Mikrotik.',
             ]);
         }
 
         // Cari interface PPPoE (biasanya berawalan <pppoe-username>)
-        $interface = '<pppoe-' . $customer->pppoe_user . '>';
-        $traffic   = $mikrotik->getInterfaceTraffic($interface);
+        $interface = '<pppoe-'.$customer->pppoe_user.'>';
+        $traffic = $mikrotik->getInterfaceTraffic($interface);
 
         // Ambil penggunaan data dari interface
         $interfaces = $mikrotik->getInterfaces();
@@ -92,15 +96,15 @@ class CustomerController extends Controller
         $txBytes = 0;
         foreach ($interfaces as $iface) {
             if (isset($iface['name']) && $iface['name'] === $interface) {
-                $rxBytes = (int)($iface['rx-byte'] ?? 0);
-                $txBytes = (int)($iface['tx-byte'] ?? 0);
+                $rxBytes = (int) ($iface['rx-byte'] ?? 0);
+                $txBytes = (int) ($iface['tx-byte'] ?? 0);
                 break;
             }
         }
 
         // Ambil uptime dari sesi PPPoE aktif
         $actives = $mikrotik->getPppoeActives();
-        $uptime  = '';
+        $uptime = '';
         foreach ($actives as $a) {
             if (($a['name'] ?? '') === $customer->pppoe_user) {
                 $uptime = $a['uptime'] ?? '';
@@ -111,29 +115,29 @@ class CustomerController extends Controller
         // Konversi ke GB (RX mikrotik = Upload pelanggan, TX mikrotik = Download pelanggan)
         $usageData = [
             'download_gb' => round($txBytes / 1073741824, 2),
-            'upload_gb'   => round($rxBytes / 1073741824, 2),
+            'upload_gb' => round($rxBytes / 1073741824, 2),
         ];
 
         $mikrotik->close();
 
-        if (empty($traffic) || !isset($traffic['rx-bits-per-second'])) {
+        if (empty($traffic) || ! isset($traffic['rx-bits-per-second'])) {
             return response()->json([
                 'success' => true,
-                'status'  => 'offline',
-                'rx'      => 0,
-                'tx'      => 0,
-                'uptime'  => '',
-                'usage'   => $usageData,
+                'status' => 'offline',
+                'rx' => 0,
+                'tx' => 0,
+                'uptime' => '',
+                'usage' => $usageData,
             ]);
         }
 
         return response()->json([
             'success' => true,
-            'status'  => 'online',
-            'rx'      => round((int)$traffic['tx-bits-per-second'] / 1000000, 2),
-            'tx'      => round((int)$traffic['rx-bits-per-second'] / 1000000, 2),
-            'uptime'  => $uptime,
-            'usage'   => $usageData,
+            'status' => 'online',
+            'rx' => round((int) $traffic['tx-bits-per-second'] / 1000000, 2),
+            'tx' => round((int) $traffic['rx-bits-per-second'] / 1000000, 2),
+            'uptime' => $uptime,
+            'usage' => $usageData,
         ]);
     }
 
@@ -141,12 +145,12 @@ class CustomerController extends Controller
     {
         $validated = $request->validate($this->rules());
         $validated['customer_number'] = str_pad(rand(1, 99999), 5, '0', STR_PAD_LEFT);
-        $customer  = Customer::create($validated);
+        $customer = Customer::create($validated);
         $customer->load('package:id,name,category');
 
         return response()->json([
-            'success'  => true,
-            'message'  => "Pelanggan \"{$customer->name}\" berhasil ditambahkan.",
+            'success' => true,
+            'message' => "Pelanggan \"{$customer->name}\" berhasil ditambahkan.",
             'customer' => $customer->toJsonData(),
         ]);
     }
@@ -158,8 +162,8 @@ class CustomerController extends Controller
         $customer->load('package:id,name,category');
 
         return response()->json([
-            'success'  => true,
-            'message'  => "Data \"{$customer->name}\" berhasil diperbarui.",
+            'success' => true,
+            'message' => "Data \"{$customer->name}\" berhasil diperbarui.",
             'customer' => $customer->toJsonData(),
         ]);
     }
@@ -185,7 +189,40 @@ class CustomerController extends Controller
         return response()->json([
             'success' => true,
             'message' => "Pelanggan \"{$customer->name}\" berhasil {$labels[$request->status]}.",
-            'status'  => $customer->status,
+            'status' => $customer->status,
+        ]);
+    }
+
+    public function updateWifi(Request $request, Customer $customer, GenieAcsService $genieAcs): JsonResponse
+    {
+        $validated = $request->validate([
+            'ssid' => 'required|string|min:1|max:32',
+            'password' => 'required|string|min:8|max:63',
+        ]);
+
+        if (blank($customer->acs_device_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pelanggan belum memiliki ACS Device ID.',
+            ], 422);
+        }
+
+        $result = $genieAcs->updateWifi(
+            $customer->acs_device_id,
+            $validated['ssid'],
+            $validated['password']
+        );
+
+        if (! $result['success']) {
+            return response()->json($result, 422);
+        }
+
+        $customer->update(['wifi_ssid' => $validated['ssid']]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Perintah ubah WiFi berhasil dikirim ke ONT pelanggan.',
+            'wifi_ssid' => $customer->wifi_ssid,
         ]);
     }
 
@@ -208,15 +245,15 @@ class CustomerController extends Controller
         $generated = [];
         for ($i = 0; $i < $count; $i++) {
             $customer = Customer::create([
-                'name'       => fake()->name(),
-                'email'      => fake()->unique()->safeEmail(),
-                'phone'      => '08' . fake()->numerify('##########'),
-                'address'    => fake()->address(),
+                'name' => fake()->name(),
+                'email' => fake()->unique()->safeEmail(),
+                'phone' => '08'.fake()->numerify('##########'),
+                'address' => fake()->address(),
                 'package_id' => $packages[array_rand($packages)],
                 'ip_address' => fake()->ipv4(),
                 'pppoe_user' => fake()->userName(),
-                'status'     => 'aktif',
-                'join_date'  => now()->subDays(rand(0, 30))->format('Y-m-d'),
+                'status' => 'aktif',
+                'join_date' => now()->subDays(rand(0, 30))->format('Y-m-d'),
                 'billing_date' => rand(1, 28),
                 'customer_number' => str_pad(rand(1, 99999), 5, '0', STR_PAD_LEFT),
             ]);
@@ -225,30 +262,32 @@ class CustomerController extends Controller
         }
 
         return response()->json([
-            'success'   => true,
-            'message'   => "Berhasil generate {$count} data pelanggan dummy.",
+            'success' => true,
+            'message' => "Berhasil generate {$count} data pelanggan dummy.",
             'customers' => $generated,
         ]);
     }
 
-
     private function rules(): array
     {
         return [
-            'name'       => 'required|string|max:150',
-            'email'      => 'nullable|email|max:150',
-            'phone'      => 'nullable|string|max:20',
-            'address'    => 'nullable|string',
+            'name' => 'required|string|max:150',
+            'email' => 'nullable|email|max:150',
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string',
             'package_id' => 'required|exists:packages,id',
             'ip_address' => 'nullable|string|max:45',
             'pppoe_user' => 'nullable|string|max:100',
-            'onu_id'     => 'nullable|string|max:100',
-            'status'     => 'required|in:aktif,suspend,terminate',
-            'join_date'    => 'required|date',
+            'onu_id' => 'nullable|string|max:100',
+            'acs_device_id' => 'nullable|string|max:255',
+            'ont_serial_number' => 'nullable|string|max:100',
+            'wifi_ssid' => 'nullable|string|max:32',
+            'status' => 'required|in:aktif,suspend,terminate',
+            'join_date' => 'required|date',
             'billing_date' => 'nullable|integer|min:1|max:31',
-            'notes'        => 'nullable|string|max:1000',
-            'latitude'     => 'nullable|numeric|between:-90,90',
-            'longitude'    => 'nullable|numeric|between:-180,180',
+            'notes' => 'nullable|string|max:1000',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ];
     }
 }

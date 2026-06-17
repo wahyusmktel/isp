@@ -83,6 +83,14 @@
                     <p class="text-sm font-medium text-gray-900 font-mono">{{ $customer->onu_id ?? '-' }}</p>
                 </div>
                 <div>
+                    <p class="text-xs text-gray-400 mb-1">ACS Device ID</p>
+                    <p class="text-sm font-medium text-gray-900 font-mono break-all">{{ $customer->acs_device_id ?? '-' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-1">SSID WiFi Tercatat</p>
+                    <p id="wifi-ssid-display" class="text-sm font-medium text-gray-900">{{ $customer->wifi_ssid ?? '-' }}</p>
+                </div>
+                <div>
                     <p class="text-xs text-gray-400 mb-1">Uptime Koneksi</p>
                     <p id="uptime-display" class="text-sm font-medium text-gray-900">
                         @if(empty($customer->pppoe_user))
@@ -93,6 +101,38 @@
                     </p>
                 </div>
             </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Manajemen WiFi ONT</h3>
+            @if(empty($customer->acs_device_id))
+                <div class="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-xl p-4">
+                    Isi ACS Device ID pelanggan ini dari halaman edit pelanggan sebelum mengirim perintah TR-069.
+                </div>
+            @endif
+            <form id="wifi-form" class="space-y-4 mt-{{ empty($customer->acs_device_id) ? '4' : '0' }}">
+                @csrf
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Nama WiFi / SSID</label>
+                    <input type="text" name="ssid" value="{{ $customer->wifi_ssid ?? '' }}" maxlength="32" required
+                           class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Password WiFi Baru</label>
+                    <input type="password" name="password" minlength="8" maxlength="63" required
+                           class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                    <p class="text-[10px] text-gray-400 mt-1">WPA/WPA2 umumnya membutuhkan 8-63 karakter.</p>
+                </div>
+                <button type="submit" id="wifi-save-btn"
+                        class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-500 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        {{ empty($customer->acs_device_id) ? 'disabled' : '' }}>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
+                    </svg>
+                    <span id="wifi-save-text">Kirim Perintah Ubah WiFi</span>
+                </button>
+                <p id="wifi-message" class="hidden text-xs rounded-xl px-3 py-2"></p>
+            </form>
         </div>
     </div>
 
@@ -157,6 +197,55 @@ function formatUptime(raw) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+    const wifiForm = document.getElementById('wifi-form');
+    const wifiMessage = document.getElementById('wifi-message');
+    const wifiBtn = document.getElementById('wifi-save-btn');
+    const wifiBtnText = document.getElementById('wifi-save-text');
+
+    function showWifiMessage(type, message) {
+        wifiMessage.textContent = message;
+        wifiMessage.classList.remove('hidden', 'bg-green-50', 'text-green-700', 'bg-red-50', 'text-red-700');
+        if (type === 'success') {
+            wifiMessage.classList.add('bg-green-50', 'text-green-700');
+        } else {
+            wifiMessage.classList.add('bg-red-50', 'text-red-700');
+        }
+    }
+
+    wifiForm?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        if (!wifiBtn || wifiBtn.disabled) return;
+
+        wifiBtn.disabled = true;
+        wifiBtnText.textContent = 'Mengirim ke GenieACS...';
+        wifiMessage.classList.add('hidden');
+
+        try {
+            const response = await fetch('{{ route('customers.wifi.update', $customer->id) }}', {
+                method: 'POST',
+                body: new FormData(wifiForm),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showWifiMessage('success', data.message);
+                document.getElementById('wifi-ssid-display').textContent = data.wifi_ssid || '-';
+                wifiForm.querySelector('[name="password"]').value = '';
+            } else {
+                showWifiMessage('error', data.message || 'Gagal mengirim perintah ubah WiFi.');
+            }
+        } catch (err) {
+            showWifiMessage('error', 'Koneksi ke aplikasi bermasalah.');
+        } finally {
+            wifiBtn.disabled = {{ empty($customer->acs_device_id) ? 'true' : 'false' }};
+            wifiBtnText.textContent = 'Kirim Perintah Ubah WiFi';
+        }
+    });
     // ─── Setup Traffic Chart (Live Simulation) ───
     const ctxTraffic = document.getElementById('trafficChart').getContext('2d');
     

@@ -10,15 +10,16 @@ class Customer extends Model
     protected $fillable = [
         'customer_number', 'name', 'email', 'phone', 'address',
         'package_id', 'ip_address', 'pppoe_user', 'onu_id', 'mac_ont',
+        'acs_device_id', 'ont_serial_number', 'wifi_ssid',
         'status', 'join_date', 'billing_date', 'notes',
         'latitude', 'longitude',
     ];
 
     protected $casts = [
-        'join_date'    => 'date',
+        'join_date' => 'date',
         'billing_date' => 'integer',
-        'latitude'     => 'float',
-        'longitude'    => 'float',
+        'latitude' => 'float',
+        'longitude' => 'float',
     ];
 
     public function package(): BelongsTo
@@ -29,35 +30,38 @@ class Customer extends Model
     public function getStatusLabelAttribute(): string
     {
         return match ($this->status) {
-            'suspend'   => 'Suspend',
+            'suspend' => 'Suspend',
             'terminate' => 'Terminate',
-            default     => 'Aktif',
+            default => 'Aktif',
         };
     }
 
     public function toJsonData(): array
     {
         return [
-            'id'              => $this->id,
+            'id' => $this->id,
             'customer_number' => $this->customer_number ?? '',
-            'name'            => $this->name,
-            'email'           => $this->email ?? '',
-            'phone'        => $this->phone,
-            'address'      => $this->address,
-            'package_id'   => $this->package_id,
+            'name' => $this->name,
+            'email' => $this->email ?? '',
+            'phone' => $this->phone,
+            'address' => $this->address,
+            'package_id' => $this->package_id,
             'package_name' => $this->package?->name ?? '—',
-            'package_cat'  => $this->package?->category ?? 'home',
-            'ip_address'   => $this->ip_address ?? '',
-            'pppoe_user'   => $this->pppoe_user ?? '',
-            'onu_id'       => $this->onu_id ?? '',
-            'mac_ont'      => $this->mac_ont ?? '',
-            'status'       => $this->status,
-            'join_date'    => $this->join_date?->format('Y-m-d') ?? '',
-            'join_date_fmt'=> $this->join_date?->format('d M Y') ?? '—',
+            'package_cat' => $this->package?->category ?? 'home',
+            'ip_address' => $this->ip_address ?? '',
+            'pppoe_user' => $this->pppoe_user ?? '',
+            'onu_id' => $this->onu_id ?? '',
+            'mac_ont' => $this->mac_ont ?? '',
+            'acs_device_id' => $this->acs_device_id ?? '',
+            'ont_serial_number' => $this->ont_serial_number ?? '',
+            'wifi_ssid' => $this->wifi_ssid ?? '',
+            'status' => $this->status,
+            'join_date' => $this->join_date?->format('Y-m-d') ?? '',
+            'join_date_fmt' => $this->join_date?->format('d M Y') ?? '—',
             'billing_date' => $this->billing_date ?? 1,
-            'notes'        => $this->notes ?? '',
-            'latitude'     => $this->latitude,
-            'longitude'    => $this->longitude,
+            'notes' => $this->notes ?? '',
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
         ];
     }
 }
