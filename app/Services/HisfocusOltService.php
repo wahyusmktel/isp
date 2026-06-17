@@ -80,6 +80,10 @@ class HisfocusOltService
         return [
             'success' => false,
             'message' => 'Data ONU pelanggan tidak ditemukan di tabel OLT HisFocus.',
+            'lookup' => [
+                'onu_id' => $customer->onu_id,
+                'mac_ont' => $customer->mac_ont,
+            ],
         ];
     }
 

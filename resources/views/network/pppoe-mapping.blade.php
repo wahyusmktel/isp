@@ -282,6 +282,7 @@ async function mapSelected(idx) {
                 customer_id: parseInt(sel.value),
                 pppoe_user: secret.username,
                 ip_address: secret.ip || null,
+                mac_ont: secret.mac || null,
             })
         });
         const data = await res.json();
@@ -292,6 +293,7 @@ async function mapSelected(idx) {
         if (ci > -1) {
             CUSTOMERS[ci].pppoe_user = secret.username;
             if (secret.ip) CUSTOMERS[ci].ip_address = secret.ip;
+            if (secret.mac) CUSTOMERS[ci].mac_ont = secret.mac;
         }
 
         showToast(data.message, 'success');

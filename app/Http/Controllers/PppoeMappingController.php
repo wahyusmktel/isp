@@ -84,12 +84,14 @@ class PppoeMappingController extends Controller
             'customer_id'  => 'required|exists:customers,id',
             'pppoe_user'   => 'required|string|max:100',
             'ip_address'   => 'nullable|string|max:45',
+            'mac_ont'      => 'nullable|string|max:17',
         ]);
 
         $customer = Customer::findOrFail($validated['customer_id']);
         $customer->update([
             'pppoe_user' => $validated['pppoe_user'],
             'ip_address' => $validated['ip_address'] ?? $customer->ip_address,
+            'mac_ont'    => $validated['mac_ont'] ?? $customer->mac_ont,
         ]);
 
         $customer->load('package:id,name');
@@ -143,6 +145,7 @@ class PppoeMappingController extends Controller
             'mappings.*.customer_id' => 'required|exists:customers,id',
             'mappings.*.pppoe_user'  => 'required|string|max:100',
             'mappings.*.ip_address'  => 'nullable|string|max:45',
+            'mappings.*.mac_ont'     => 'nullable|string|max:17',
         ]);
 
         $count = 0;
@@ -152,6 +155,7 @@ class PppoeMappingController extends Controller
                 $customer->update([
                     'pppoe_user' => $m['pppoe_user'],
                     'ip_address' => $m['ip_address'] ?? $customer->ip_address,
+                    'mac_ont'    => $m['mac_ont'] ?? $customer->mac_ont,
                 ]);
                 $count++;
             }
