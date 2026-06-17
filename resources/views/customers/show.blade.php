@@ -81,7 +81,18 @@
                 @endif
                 <div>
                     <p class="text-xs text-gray-400 mb-1">IP Address</p>
-                    <p class="text-sm font-medium text-gray-900 font-mono">{{ $customer->ip_address ?? 'Dynamic/DHCP' }}</p>
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="text-sm font-medium text-gray-900 font-mono truncate">{{ $customer->ip_address ?? 'Dynamic/DHCP' }}</p>
+                        @if(!empty($customer->pppoe_user) && !empty($customer->ip_address))
+                            <button type="button" onclick="openOntAdminModal('{{ $customer->ip_address }}')"
+                                    class="inline-flex items-center justify-center w-8 h-8 text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-xl transition-colors flex-shrink-0"
+                                    title="Buka admin ONT http://{{ $customer->ip_address }}:80">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.172-1.172M10.172 13.828a4 4 0 005.656 0l3-3a4 4 0 10-5.656-5.656L12 6.343"/>
+                                </svg>
+                            </button>
+                        @endif
+                    </div>
                 </div>
                 <div>
                     <p class="text-xs text-gray-400 mb-1">PPPoE Username</p>
@@ -352,6 +363,55 @@
     </div>
 </div>
 
+{{-- ONT Admin Web Modal --}}
+<div id="ont-admin-modal" class="fixed inset-0 z-50 hidden" aria-modal="true" role="dialog">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeOntAdminModal()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-3 sm:p-5">
+        <div id="ont-admin-card" class="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[82vh] flex flex-col overflow-hidden transition-all duration-200 scale-95 opacity-0">
+            <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-100 bg-white">
+                <div class="min-w-0">
+                    <h2 class="text-sm font-bold text-gray-900">Admin ONT</h2>
+                    <p id="ont-admin-url-label" class="text-xs text-gray-400 font-mono truncate">-</p>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button type="button" onclick="refreshOntAdminFrame()"
+                            class="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors"
+                            title="Refresh">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0119 5M19 5h-5M5 19h5"/>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="openOntAdminNewTab()"
+                            class="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors"
+                            title="Buka tab baru">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="toggleOntAdminMaximize()" id="ont-admin-max-btn"
+                            class="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors"
+                            title="Maximize">
+                        <svg id="ont-admin-max-icon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="closeOntAdminModal()"
+                            class="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors"
+                            title="Tutup">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="bg-amber-50 border-b border-amber-100 px-4 py-2 text-xs text-amber-800">
+                Jika halaman tidak tampil, pastikan server/client bisa route ke IP pelanggan dan browser tidak memblokir HTTP dari halaman HTTPS.
+            </div>
+            <iframe id="ont-admin-frame" src="about:blank" class="w-full flex-1 bg-white" referrerpolicy="no-referrer"></iframe>
+        </div>
+    </div>
+</div>
+
 {{-- Edit Customer Modal --}}
 <div id="detail-customer-modal" class="fixed inset-0 z-50 hidden" aria-modal="true" role="dialog">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeCustomerEditModal()"></div>
@@ -533,6 +593,8 @@ let DETAIL_AVAILABLE_SECRET_INDEXES = [];
 let DETAIL_HAS_ACS = {{ filled($customer->acs_device_id) ? 'true' : 'false' }};
 let DETAIL_MODAL_MAXIMIZED = false;
 let DETAIL_MODAL_DRAG = null;
+let ONT_ADMIN_URL = '';
+let ONT_ADMIN_MAXIMIZED = false;
 
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -547,6 +609,66 @@ function showInlineMessage(el, type, message) {
     if (type === 'success') el.classList.add('bg-green-50', 'text-green-700');
     else if (type === 'info') el.classList.add('bg-blue-50', 'text-blue-700');
     else el.classList.add('bg-red-50', 'text-red-700');
+}
+
+function openOntAdminModal(ipAddress) {
+    const modal = document.getElementById('ont-admin-modal');
+    const card = document.getElementById('ont-admin-card');
+    const frame = document.getElementById('ont-admin-frame');
+    const label = document.getElementById('ont-admin-url-label');
+
+    ONT_ADMIN_URL = `http://${ipAddress}:80/`;
+    label.textContent = ONT_ADMIN_URL;
+    frame.src = ONT_ADMIN_URL;
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        card.classList.remove('scale-95', 'opacity-0');
+        card.classList.add('scale-100', 'opacity-100');
+    }));
+}
+
+function closeOntAdminModal() {
+    const modal = document.getElementById('ont-admin-modal');
+    const card = document.getElementById('ont-admin-card');
+    const frame = document.getElementById('ont-admin-frame');
+
+    card.classList.add('scale-95', 'opacity-0');
+    card.classList.remove('scale-100', 'opacity-100');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        frame.src = 'about:blank';
+        document.body.style.overflow = '';
+    }, 180);
+}
+
+function refreshOntAdminFrame() {
+    const frame = document.getElementById('ont-admin-frame');
+    if (ONT_ADMIN_URL) frame.src = ONT_ADMIN_URL;
+}
+
+function openOntAdminNewTab() {
+    if (ONT_ADMIN_URL) window.open(ONT_ADMIN_URL, '_blank', 'noopener');
+}
+
+function toggleOntAdminMaximize() {
+    const card = document.getElementById('ont-admin-card');
+    const icon = document.getElementById('ont-admin-max-icon');
+    ONT_ADMIN_MAXIMIZED = !ONT_ADMIN_MAXIMIZED;
+
+    if (ONT_ADMIN_MAXIMIZED) {
+        card.classList.remove('max-w-6xl', 'h-[82vh]', 'rounded-2xl');
+        card.classList.add('max-w-none', 'h-[calc(100vh-1rem)]', 'rounded-xl');
+        card.style.width = 'calc(100vw - 1rem)';
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M8 4v4H4M16 4v4h4M8 20v-4H4M16 20v-4h4"/>';
+        return;
+    }
+
+    card.classList.add('max-w-6xl', 'h-[82vh]', 'rounded-2xl');
+    card.classList.remove('max-w-none', 'h-[calc(100vh-1rem)]', 'rounded-xl');
+    card.style.width = '';
+    icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/>';
 }
 
 function openPppoeMappingPanel() {
