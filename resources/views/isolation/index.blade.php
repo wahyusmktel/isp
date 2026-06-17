@@ -175,22 +175,16 @@ $portalUrl = route('isolation.portal');
 
             <div class="bg-[#101827] text-white rounded-2xl p-5 overflow-hidden">
                 <h2 class="text-sm font-bold">Seting Mikrotik</h2>
-                <p class="text-xs text-slate-300 mt-1">Gunakan address-list <span class="font-mono text-emerald-300">isolir</span>. Sesuaikan IP server aplikasi.</p>
-                <pre class="mt-4 text-[11px] leading-relaxed whitespace-pre-wrap bg-black/30 rounded-xl p-4 text-slate-100">/ip proxy
-set enabled=yes port=8080
-
-/ip proxy access
-add action=deny redirect-to="{{ $portalUrl }}"
-
-/ip firewall nat
-add chain=dstnat src-address-list=isolir protocol=tcp dst-port=80 action=redirect to-ports=8080 comment="Redirect HTTP pelanggan isolir ke portal"
+                <p class="text-xs text-slate-300 mt-1">RouterOS ini memakai mode NAT langsung ke server portal. Sesuaikan IP server aplikasi.</p>
+                <pre class="mt-4 text-[11px] leading-relaxed whitespace-pre-wrap bg-black/30 rounded-xl p-4 text-slate-100">/ip firewall nat
+add chain=dstnat src-address-list=isolir protocol=tcp dst-port=80 action=dst-nat to-addresses=IP_SERVER_APP to-ports=80 comment="Redirect HTTP pelanggan isolir ke server portal"
 
 /ip firewall filter
 add chain=forward src-address-list=isolir dst-address=IP_SERVER_APP protocol=tcp dst-port=80,443 action=accept comment="Allow portal isolir"
 add chain=forward src-address-list=isolir protocol=udp dst-port=53 action=accept comment="Allow DNS pelanggan isolir"
 add chain=forward src-address-list=isolir action=drop comment="Drop internet pelanggan isolir"</pre>
                 <p class="text-[11px] text-slate-300 mt-3">Portal: <span class="font-mono text-emerald-300">{{ $portalUrl }}</span></p>
-                <p class="text-[11px] text-slate-400 mt-2">Catatan: HTTPS tidak bisa dipaksa redirect transparan tanpa sertifikat. Rule ini menangkap HTTP dan memblokir trafik lain sampai pembayaran dibuka.</p>
+                <p class="text-[11px] text-slate-400 mt-2">Catatan: pastikan port 80 server aplikasi melayani Laravel dan tidak langsung force redirect HTTPS untuk trafik isolir. HTTPS tidak bisa dipaksa redirect transparan tanpa sertifikat domain tujuan.</p>
             </div>
         </div>
     </div>

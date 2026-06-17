@@ -48,6 +48,9 @@ Route::get('/terms', function () {
     return view('terms');
 })->name('terms');
 Route::get('/isolir-portal', [IsolationController::class, 'portal'])->name('isolation.portal');
+Route::get('/isolir-captive/{path?}', [IsolationController::class, 'portal'])
+    ->where('path', '.*')
+    ->name('isolation.captive');
 
 // ─── Guest (belum login) ─────────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
