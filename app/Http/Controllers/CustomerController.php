@@ -237,11 +237,54 @@ class CustomerController extends Controller
         ]);
     }
 
+    public function updateAcsDevice(Request $request, Customer $customer, GenieAcsService $genieAcs): JsonResponse
+    {
+        $validated = $request->validate([
+            'acs_device_id' => 'required|string|max:255',
+        ]);
+
+        $result = $genieAcs->deviceInfo($validated['acs_device_id'], true);
+
+        if (! ($result['success'] ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'Device tidak ditemukan di GenieACS.',
+                'details' => $result,
+            ], 422);
+        }
+
+        $device = $result['device'] ?? [];
+        $customer->update([
+            'acs_device_id' => $validated['acs_device_id'],
+            'ont_serial_number' => $device['serial_number'] ?? $customer->ont_serial_number,
+            'wifi_ssid' => $device['wifi_ssid'] ?? $customer->wifi_ssid,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ACS Device ID berhasil disimpan dan data ONT berhasil dibaca dari GenieACS.',
+            'customer' => $customer->fresh('package')->toJsonData(),
+            'device' => $device,
+            'optical' => $result['optical'] ?? [],
+            'has_optical_data' => $result['has_optical_data'] ?? false,
+        ]);
+    }
+
     public function ontInfo(Request $request, Customer $customer, GenieAcsService $genieAcs, HisfocusOltService $hisfocusOlt): JsonResponse
     {
         $oltResult = $hisfocusOlt->customerOpticalInfo($customer);
 
         if (($oltResult['success'] ?? false) && ($oltResult['has_optical_data'] ?? false)) {
+            if (filled($customer->acs_device_id)) {
+                $genieResult = $genieAcs->deviceInfo($customer->acs_device_id, false);
+                if (($genieResult['success'] ?? false) && isset($genieResult['device'])) {
+                    $oltResult['device'] = array_merge($oltResult['device'] ?? [], $genieResult['device']);
+                    if (filled($genieResult['device']['wifi_ssid'] ?? null) && $customer->wifi_ssid !== $genieResult['device']['wifi_ssid']) {
+                        $customer->update(['wifi_ssid' => $genieResult['device']['wifi_ssid']]);
+                    }
+                }
+            }
+
             return response()->json($oltResult);
         }
 

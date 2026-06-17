@@ -85,7 +85,18 @@
                 </div>
                 <div>
                     <p class="text-xs text-gray-400 mb-1">PPPoE Username</p>
-                    <p class="text-sm font-medium text-gray-900 font-mono">{{ $customer->pppoe_user ?? '-' }}</p>
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="text-sm font-medium text-gray-900 font-mono truncate">{{ $customer->pppoe_user ?? '-' }}</p>
+                        @if(!empty($customer->pppoe_user))
+                            <button type="button" onclick="openPppoeMappingPanel()"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors flex-shrink-0">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                </svg>
+                                Ubah Mapping
+                            </button>
+                        @endif
+                    </div>
                 </div>
                 <div>
                     <p class="text-xs text-gray-400 mb-1">ONU / SN / Modem ID</p>
@@ -112,15 +123,14 @@
             </div>
         </div>
 
-        @if(empty($customer->pppoe_user))
-        <div id="pppoe-map-card" class="bg-white rounded-2xl border border-amber-100 p-6 shadow-sm">
+        <div id="pppoe-map-card" class="{{ empty($customer->pppoe_user) ? '' : 'hidden' }} bg-white rounded-2xl border border-amber-100 p-6 shadow-sm">
             <div class="flex items-start justify-between gap-3 mb-4">
                 <div>
-                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Mapping PPPoE</h3>
+                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">{{ empty($customer->pppoe_user) ? 'Mapping PPPoE' : 'Ubah Mapping PPPoE' }}</h3>
                     <p class="text-xs text-gray-400 mt-1">Pilih router, ambil akun PPPoE, lalu mapping langsung ke pelanggan ini.</p>
                 </div>
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 uppercase">
-                    Belum Mapped
+                    {{ empty($customer->pppoe_user) ? 'Belum Mapped' : 'Mapped' }}
                 </span>
             </div>
 
@@ -147,6 +157,13 @@
                 <div id="detail-pppoe-result" class="hidden space-y-3">
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1.5">Akun PPPoE Tersedia</label>
+                        <div class="mb-2 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                            <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                            </svg>
+                            <input type="text" id="detail-pppoe-search" placeholder="Cari username PPPoE, profile, IP, atau MAC..."
+                                   class="bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none flex-1">
+                        </div>
                         <select id="detail-pppoe-select"
                                 class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
                             <option value="">Pilih akun PPPoE...</option>
@@ -161,14 +178,13 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
                         </svg>
-                        Mapping ke {{ $customer->name }}
+                        {{ empty($customer->pppoe_user) ? 'Mapping ke' : 'Simpan Mapping Baru untuk' }} {{ $customer->name }}
                     </button>
                 </div>
 
                 <p id="detail-pppoe-message" class="hidden text-xs rounded-xl px-3 py-2"></p>
             </div>
         </div>
-        @endif
 
         <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
             <div class="flex items-center justify-between gap-3 mb-4">
@@ -183,10 +199,54 @@
                 </button>
             </div>
             @if(empty($customer->acs_device_id))
-                <div class="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-xl p-4">
-                    Isi ACS Device ID pelanggan ini dari halaman edit pelanggan sebelum mengirim perintah TR-069.
+                <div id="quick-acs-card" class="bg-amber-50 border border-amber-200 text-amber-900 text-sm rounded-xl p-4 mb-4">
+                    <p class="font-semibold mb-2">ACS Device ID belum diisi</p>
+                    <p class="text-xs text-amber-800 mb-3">Isi ACS Device ID di sini untuk langsung membaca data ONT dari GenieACS dan mengaktifkan manajemen WiFi.</p>
+                    <form id="quick-acs-form" class="space-y-3">
+                        @csrf
+                        <div>
+                            <label class="block text-xs font-semibold mb-1.5">ACS Device ID</label>
+                            <input type="text" name="acs_device_id" id="quick-acs-device-id" required maxlength="255"
+                                   placeholder="Contoh: ZTE%2D..."
+                                   class="w-full px-3.5 py-2.5 text-sm border border-amber-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-white font-mono">
+                        </div>
+                        <button type="submit" id="quick-acs-save-btn"
+                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-500 rounded-xl transition-colors disabled:opacity-60">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <span id="quick-acs-save-text">Simpan & Ambil Data GenieACS</span>
+                        </button>
+                    </form>
+                    <p id="quick-acs-message" class="hidden text-xs rounded-xl px-3 py-2 mt-3"></p>
                 </div>
             @endif
+
+            <div id="genieacs-device-card" class="rounded-xl border border-gray-100 bg-white p-4 mb-4">
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Informasi Device GenieACS</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="col-span-2">
+                        <p class="text-[10px] text-gray-400">ACS Device ID</p>
+                        <p id="acs-device-display" class="text-sm font-bold text-gray-900 font-mono break-all">{{ $customer->acs_device_id ?? '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-gray-400">Manufacturer</p>
+                        <p id="genieacs-manufacturer" class="text-sm font-bold text-gray-900">-</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-gray-400">Product Class</p>
+                        <p id="genieacs-product-class" class="text-sm font-bold text-gray-900">-</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-gray-400">Serial Number</p>
+                        <p id="genieacs-serial-number" class="text-sm font-bold text-gray-900 font-mono">-</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-gray-400">SSID dari GenieACS</p>
+                        <p id="genieacs-wifi-ssid" class="text-sm font-bold text-gray-900">-</p>
+                    </div>
+                </div>
+            </div>
 
             <div id="ont-optical-card" class="rounded-xl border border-gray-100 bg-gray-50 p-4 mb-4">
                 <div class="flex items-start justify-between gap-3 mb-3">
@@ -295,23 +355,33 @@
 {{-- Edit Customer Modal --}}
 <div id="detail-customer-modal" class="fixed inset-0 z-50 hidden" aria-modal="true" role="dialog">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeCustomerEditModal()"></div>
-    <div class="absolute inset-0 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="absolute inset-0 flex items-start justify-center p-3 sm:p-5 overflow-hidden">
         <div id="detail-customer-modal-card"
-             class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-4 transition-all duration-200 scale-95 opacity-0">
-            <div class="flex items-start justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+             class="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl mt-4 max-h-[calc(100vh-2rem)] flex flex-col transition-all duration-200 scale-95 opacity-0">
+            <div id="detail-customer-modal-header" class="flex items-start justify-between px-6 pt-5 pb-4 border-b border-gray-100 cursor-move select-none">
                 <div>
                     <h2 class="text-base font-bold text-gray-900">Edit Data Pelanggan</h2>
-                    <p class="text-xs text-gray-400 mt-0.5">Perbarui data identitas, layanan, dan jaringan pelanggan</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Drag header untuk memindahkan modal. Gunakan maximize jika butuh ruang kerja penuh.</p>
                 </div>
-                <button type="button" onclick="closeCustomerEditModal()"
-                        class="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="toggleCustomerEditMaximize()" id="detail-customer-max-btn"
+                            class="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                            title="Maximize">
+                        <svg id="detail-customer-max-icon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="closeCustomerEditModal()"
+                            class="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                            title="Tutup">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
-            <form id="detail-customer-form" class="px-6 py-5 space-y-5">
+            <form id="detail-customer-form" class="px-6 py-5 space-y-5 overflow-y-auto">
                 @csrf
                 <input type="hidden" name="_method" value="PUT">
                 <input type="hidden" name="latitude" value="{{ $customer->latitude }}">
@@ -412,9 +482,10 @@
                                    class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white font-mono">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Serial Number ONT</label>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Serial Number ONT dari GenieACS</label>
                             <input type="text" id="edit-ont-serial" name="ont_serial_number" value="{{ $customer->ont_serial_number }}" maxlength="100"
                                    class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white font-mono">
+                            <p class="text-[10px] text-gray-400 mt-1">Manufacturer dan Product Class tampil otomatis di panel Manajemen WiFi ONT.</p>
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-xs font-semibold text-gray-600 mb-1.5">SSID WiFi Tercatat</label>
@@ -458,6 +529,10 @@
 const DETAIL_CUSTOMER_ID = {{ $customer->id }};
 const DETAIL_MAPPED_PPPOE = @json($mappedPppoeUsers);
 let DETAIL_SECRETS = [];
+let DETAIL_AVAILABLE_SECRET_INDEXES = [];
+let DETAIL_HAS_ACS = {{ filled($customer->acs_device_id) ? 'true' : 'false' }};
+let DETAIL_MODAL_MAXIMIZED = false;
+let DETAIL_MODAL_DRAG = null;
 
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -472,6 +547,16 @@ function showInlineMessage(el, type, message) {
     if (type === 'success') el.classList.add('bg-green-50', 'text-green-700');
     else if (type === 'info') el.classList.add('bg-blue-50', 'text-blue-700');
     else el.classList.add('bg-red-50', 'text-red-700');
+}
+
+function openPppoeMappingPanel() {
+    const card = document.getElementById('pppoe-map-card');
+    const message = document.getElementById('detail-pppoe-message');
+    if (!card) return;
+
+    card.classList.remove('hidden');
+    showInlineMessage(message, 'info', 'Pilih router dan akun PPPoE baru untuk mengganti mapping pelanggan ini.');
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function fetchDetailPppoeSecrets() {
@@ -505,15 +590,13 @@ async function fetchDetailPppoeSecrets() {
         }
 
         DETAIL_SECRETS = data.secrets || [];
-        const available = DETAIL_SECRETS.filter(secret => !DETAIL_MAPPED_PPPOE[secret.username]);
-        select.innerHTML = '<option value="">Pilih akun PPPoE...</option>' + available.map(secret => {
-            const originalIndex = DETAIL_SECRETS.findIndex(item => item.username === secret.username);
-            const status = secret.online ? 'Online' : 'Offline';
-            const profile = secret.profile ? ` - ${escapeHtml(secret.profile)}` : '';
-            return `<option value="${originalIndex}">${escapeHtml(secret.username)} (${status}${profile})</option>`;
-        }).join('');
+        DETAIL_AVAILABLE_SECRET_INDEXES = DETAIL_SECRETS
+            .map((secret, index) => ({ secret, index }))
+            .filter(item => !DETAIL_MAPPED_PPPOE[item.secret.username])
+            .map(item => item.index);
+        renderDetailPppoeOptions();
 
-        hint.textContent = `${available.length} akun belum dimapping dari ${DETAIL_SECRETS.length} akun PPPoE di ${data.router_name}.`;
+        hint.textContent = `${DETAIL_AVAILABLE_SECRET_INDEXES.length} akun belum dimapping dari ${DETAIL_SECRETS.length} akun PPPoE di ${data.router_name}.`;
         result.classList.remove('hidden');
         if (mapBtn) mapBtn.disabled = true;
         renderDetailPppoePreview();
@@ -551,6 +634,35 @@ function renderDetailPppoePreview() {
     `;
     preview.classList.remove('hidden');
     if (mapBtn) mapBtn.disabled = false;
+}
+
+function renderDetailPppoeOptions() {
+    const select = document.getElementById('detail-pppoe-select');
+    const search = (document.getElementById('detail-pppoe-search')?.value || '').trim().toLowerCase();
+    if (!select) return;
+
+    const rows = DETAIL_AVAILABLE_SECRET_INDEXES
+        .map(index => ({ index, secret: DETAIL_SECRETS[index] }))
+        .filter(({ secret }) => {
+            if (!search) return true;
+            return [
+                secret.username,
+                secret.profile,
+                secret.ip,
+                secret.mac,
+                secret.comment,
+            ].some(value => String(value || '').toLowerCase().includes(search));
+        });
+
+    select.innerHTML = '<option value="">Pilih akun PPPoE...</option>' + rows.map(({ secret, index }) => {
+        const status = secret.online ? 'Online' : 'Offline';
+        const profile = secret.profile ? ` - ${escapeHtml(secret.profile)}` : '';
+        const ip = secret.ip ? ` - ${escapeHtml(secret.ip)}` : '';
+        return `<option value="${index}">${escapeHtml(secret.username)} (${status}${profile}${ip})</option>`;
+    }).join('');
+
+    document.getElementById('detail-map-pppoe-btn').disabled = true;
+    renderDetailPppoePreview();
 }
 
 async function mapDetailSelectedPppoe() {
@@ -610,6 +722,12 @@ function openCustomerEditModal() {
 
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    if (!DETAIL_MODAL_MAXIMIZED && !card.style.left) {
+        card.style.position = '';
+        card.style.left = '';
+        card.style.top = '';
+        card.style.marginTop = '';
+    }
     requestAnimationFrame(() => requestAnimationFrame(() => {
         card.classList.remove('scale-95', 'opacity-0');
         card.classList.add('scale-100', 'opacity-100');
@@ -625,6 +743,82 @@ function closeCustomerEditModal() {
         modal.classList.add('hidden');
         document.body.style.overflow = '';
     }, 200);
+}
+
+function toggleCustomerEditMaximize() {
+    const card = document.getElementById('detail-customer-modal-card');
+    const icon = document.getElementById('detail-customer-max-icon');
+    DETAIL_MODAL_MAXIMIZED = !DETAIL_MODAL_MAXIMIZED;
+
+    if (DETAIL_MODAL_MAXIMIZED) {
+        card.dataset.prevStyle = JSON.stringify({
+            position: card.style.position,
+            left: card.style.left,
+            top: card.style.top,
+            marginTop: card.style.marginTop,
+            width: card.style.width,
+            maxWidth: card.style.maxWidth,
+            maxHeight: card.style.maxHeight,
+            height: card.style.height,
+        });
+        card.style.position = 'fixed';
+        card.style.left = '12px';
+        card.style.top = '12px';
+        card.style.marginTop = '0';
+        card.style.width = 'calc(100vw - 24px)';
+        card.style.maxWidth = 'none';
+        card.style.height = 'calc(100vh - 24px)';
+        card.style.maxHeight = 'calc(100vh - 24px)';
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M8 4v4H4M16 4v4h4M8 20v-4H4M16 20v-4h4"/>';
+        return;
+    }
+
+    const prev = card.dataset.prevStyle ? JSON.parse(card.dataset.prevStyle) : {};
+    card.style.position = prev.position || '';
+    card.style.left = prev.left || '';
+    card.style.top = prev.top || '';
+    card.style.marginTop = prev.marginTop || '';
+    card.style.width = prev.width || '';
+    card.style.maxWidth = prev.maxWidth || '';
+    card.style.maxHeight = prev.maxHeight || '';
+    card.style.height = prev.height || '';
+    icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/>';
+}
+
+function initCustomerEditModalMove() {
+    const card = document.getElementById('detail-customer-modal-card');
+    const header = document.getElementById('detail-customer-modal-header');
+    if (!card || !header) return;
+
+    header.addEventListener('mousedown', event => {
+        if (event.target.closest('button')) return;
+        if (DETAIL_MODAL_MAXIMIZED) return;
+
+        const rect = card.getBoundingClientRect();
+        DETAIL_MODAL_DRAG = {
+            offsetX: event.clientX - rect.left,
+            offsetY: event.clientY - rect.top,
+        };
+        card.style.position = 'fixed';
+        card.style.left = `${rect.left}px`;
+        card.style.top = `${rect.top}px`;
+        card.style.marginTop = '0';
+        event.preventDefault();
+    });
+
+    document.addEventListener('mousemove', event => {
+        if (!DETAIL_MODAL_DRAG) return;
+        const width = card.offsetWidth;
+        const height = card.offsetHeight;
+        const left = Math.max(8, Math.min(window.innerWidth - width - 8, event.clientX - DETAIL_MODAL_DRAG.offsetX));
+        const top = Math.max(8, Math.min(window.innerHeight - 56, event.clientY - DETAIL_MODAL_DRAG.offsetY));
+        card.style.left = `${left}px`;
+        card.style.top = `${top}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+        DETAIL_MODAL_DRAG = null;
+    });
 }
 
 async function submitCustomerEdit(event) {
@@ -681,6 +875,79 @@ async function submitCustomerEdit(event) {
     }
 }
 
+function applyGenieAcsDeviceInfo(device = {}) {
+    const set = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value || '-';
+    };
+
+    set('acs-device-display', device.id || document.getElementById('quick-acs-device-id')?.value || '{{ $customer->acs_device_id }}');
+    set('genieacs-manufacturer', device.manufacturer);
+    set('genieacs-product-class', device.product_class);
+    set('genieacs-serial-number', device.serial_number);
+    set('genieacs-wifi-ssid', device.wifi_ssid);
+
+    if (device.wifi_ssid) {
+        const display = document.getElementById('wifi-ssid-display');
+        const wifiInput = document.querySelector('#wifi-form [name="ssid"]');
+        const editWifiInput = document.getElementById('edit-wifi-ssid');
+        if (display) display.textContent = device.wifi_ssid;
+        if (wifiInput) wifiInput.value = device.wifi_ssid;
+        if (editWifiInput) editWifiInput.value = device.wifi_ssid;
+    }
+
+    if (device.serial_number) {
+        const editSerialInput = document.getElementById('edit-ont-serial');
+        if (editSerialInput) editSerialInput.value = device.serial_number;
+    }
+}
+
+async function submitQuickAcsDevice(event) {
+    event.preventDefault();
+    const form = event.target;
+    const btn = document.getElementById('quick-acs-save-btn');
+    const text = document.getElementById('quick-acs-save-text');
+    const message = document.getElementById('quick-acs-message');
+
+    btn.disabled = true;
+    text.textContent = 'Menyimpan & membaca GenieACS...';
+    message?.classList.add('hidden');
+
+    try {
+        const body = new FormData(form);
+        body.append('_method', 'PATCH');
+        const response = await fetch('/customers/{{ $customer->id }}/acs-device', {
+            method: 'POST',
+            body,
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            },
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            showInlineMessage(message, 'error', data.message || 'Gagal menyimpan ACS Device ID.');
+            return;
+        }
+
+        DETAIL_HAS_ACS = true;
+        applyGenieAcsDeviceInfo(data.device || {});
+        document.getElementById('edit-acs-device').value = data.customer?.acs_device_id || form.acs_device_id.value;
+        document.getElementById('ont-refresh-btn').disabled = false;
+        document.getElementById('wifi-save-btn').disabled = false;
+        document.getElementById('quick-acs-card')?.classList.add('hidden');
+        showInlineMessage(message, 'success', data.message);
+        fetchOntInfo(true);
+    } catch (error) {
+        showInlineMessage(message, 'error', 'Gagal menyimpan ACS Device ID: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        text.textContent = 'Simpan & Ambil Data GenieACS';
+    }
+}
+
 function formatUptime(raw) {
     if (!raw) return '—';
     const m = raw.match(/(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/);
@@ -701,7 +968,10 @@ document.addEventListener("DOMContentLoaded", function() {
     const wifiBtnText = document.getElementById('wifi-save-text');
     const ontRefreshBtn = document.getElementById('ont-refresh-btn');
     document.getElementById('detail-pppoe-select')?.addEventListener('change', renderDetailPppoePreview);
+    document.getElementById('detail-pppoe-search')?.addEventListener('input', renderDetailPppoeOptions);
     document.getElementById('detail-customer-form')?.addEventListener('submit', submitCustomerEdit);
+    document.getElementById('quick-acs-form')?.addEventListener('submit', submitQuickAcsDevice);
+    initCustomerEditModalMove();
 
     function setText(id, value, unit = '') {
         const el = document.getElementById(id);
@@ -734,7 +1004,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const statusEl = document.getElementById('ont-info-status');
         const badgeEl = document.getElementById('ont-rx-badge');
 
-        if (!ontRefreshBtn || ontRefreshBtn.disabled) {
+        if (!ontRefreshBtn || !DETAIL_HAS_ACS) {
             statusEl.textContent = 'ACS Device ID belum diisi.';
             return;
         }
@@ -756,6 +1026,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 return;
             }
 
+            applyGenieAcsDeviceInfo(data.device || {});
             const optical = data.optical || {};
             setText('ont-rx-power', optical.rx_power, ' dBm');
             setText('ont-tx-power', optical.tx_power, ' dBm');
@@ -773,7 +1044,7 @@ document.addEventListener("DOMContentLoaded", function() {
         } catch (err) {
             statusEl.textContent = 'Koneksi ke aplikasi bermasalah.';
         } finally {
-            ontRefreshBtn.disabled = {{ empty($customer->acs_device_id) ? 'true' : 'false' }};
+            ontRefreshBtn.disabled = !DETAIL_HAS_ACS;
         }
     }
 
@@ -819,7 +1090,7 @@ document.addEventListener("DOMContentLoaded", function() {
         } catch (err) {
             showWifiMessage('error', 'Koneksi ke aplikasi bermasalah.');
         } finally {
-            wifiBtn.disabled = {{ empty($customer->acs_device_id) ? 'true' : 'false' }};
+            wifiBtn.disabled = !DETAIL_HAS_ACS;
             wifiBtnText.textContent = 'Kirim Perintah Ubah WiFi';
         }
     });

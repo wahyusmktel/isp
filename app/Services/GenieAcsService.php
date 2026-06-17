@@ -118,10 +118,20 @@ class GenieAcsService
                     'InternetGatewayDevice.DeviceInfo.SerialNumber',
                     'Device.DeviceInfo.SerialNumber',
                 ]),
+                'manufacturer' => $this->firstParameter($parameters, [
+                    'DeviceID.Manufacturer',
+                    'InternetGatewayDevice.DeviceInfo.Manufacturer',
+                    'Device.DeviceInfo.Manufacturer',
+                ]),
                 'product_class' => $this->firstParameter($parameters, [
                     'DeviceID.ProductClass',
                     'InternetGatewayDevice.DeviceInfo.ProductClass',
                     'Device.DeviceInfo.ProductClass',
+                ]),
+                'wifi_ssid' => $this->firstParameter($parameters, [
+                    $this->ssidParameter(),
+                    'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID',
+                    'Device.WiFi.SSID.1.SSID',
                 ]),
                 'ip' => $this->firstParameter($parameters, [
                     'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress',
