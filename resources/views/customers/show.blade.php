@@ -263,6 +263,10 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function rxQuality(rxPower) {
+        if (rxPower === null || rxPower === undefined || rxPower === '') {
+            return { label: '-', cls: 'bg-gray-100 text-gray-500' };
+        }
+
         const value = Number(rxPower);
         if (!Number.isFinite(value)) {
             return { label: '-', cls: 'bg-gray-100 text-gray-500' };
@@ -279,7 +283,7 @@ document.addEventListener("DOMContentLoaded", function() {
         return { label: 'Buruk', cls: 'bg-red-50 text-red-700' };
     }
 
-    async function fetchOntInfo() {
+    async function fetchOntInfo(refresh = false) {
         const statusEl = document.getElementById('ont-info-status');
         const badgeEl = document.getElementById('ont-rx-badge');
 
@@ -292,7 +296,7 @@ document.addEventListener("DOMContentLoaded", function() {
         statusEl.textContent = 'Mengambil data dari GenieACS...';
 
         try {
-            const response = await fetch('/customers/{{ $customer->id }}/ont-info', {
+            const response = await fetch(`/customers/{{ $customer->id }}/ont-info${refresh ? '?refresh=1' : ''}`, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'Accept': 'application/json',
@@ -316,7 +320,9 @@ document.addEventListener("DOMContentLoaded", function() {
             const quality = rxQuality(optical.rx_power);
             badgeEl.textContent = quality.label;
             badgeEl.className = `inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${quality.cls}`;
-            statusEl.textContent = 'Data terakhir dari GenieACS.';
+            statusEl.textContent = data.has_optical_data
+                ? 'Data terakhir dari GenieACS.'
+                : 'Parameter optik belum tersedia di GenieACS. Klik Refresh, lalu coba lagi beberapa detik.';
         } catch (err) {
             statusEl.textContent = 'Koneksi ke aplikasi bermasalah.';
         } finally {
@@ -324,7 +330,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
-    ontRefreshBtn?.addEventListener('click', fetchOntInfo);
+    ontRefreshBtn?.addEventListener('click', () => fetchOntInfo(true));
 
     function showWifiMessage(type, message) {
         wifiMessage.textContent = message;

@@ -226,7 +226,7 @@ class CustomerController extends Controller
         ]);
     }
 
-    public function ontInfo(Customer $customer, GenieAcsService $genieAcs): JsonResponse
+    public function ontInfo(Request $request, Customer $customer, GenieAcsService $genieAcs): JsonResponse
     {
         if (blank($customer->acs_device_id)) {
             return response()->json([
@@ -235,7 +235,7 @@ class CustomerController extends Controller
             ]);
         }
 
-        $result = $genieAcs->deviceInfo($customer->acs_device_id);
+        $result = $genieAcs->deviceInfo($customer->acs_device_id, $request->boolean('refresh'));
 
         return response()->json($result);
     }

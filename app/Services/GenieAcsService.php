@@ -60,13 +60,17 @@ class GenieAcsService
         ];
     }
 
-    public function deviceInfo(string $deviceId): array
+    public function deviceInfo(string $deviceId, bool $refresh = false): array
     {
         if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'message' => 'URL GenieACS NBI belum dikonfigurasi.',
             ];
+        }
+
+        if ($refresh) {
+            $this->refreshObjects($deviceId);
         }
 
         try {
@@ -103,6 +107,7 @@ class GenieAcsService
         }
 
         $parameters = $this->flattenParameters($device);
+        $optical = $this->opticalInfo($parameters);
 
         return [
             'success' => true,
@@ -128,7 +133,8 @@ class GenieAcsService
                     'Events.Inform',
                 ]),
             ],
-            'optical' => $this->opticalInfo($parameters),
+            'optical' => $optical,
+            'has_optical_data' => collect($optical)->filter(fn ($value) => filled($value))->isNotEmpty(),
         ];
     }
 
@@ -137,36 +143,72 @@ class GenieAcsService
         return $this->nbiUrl().'/devices/'.rawurlencode($deviceId).'/tasks?connection_request&timeout='.$this->taskTimeout();
     }
 
+    private function refreshObjects(string $deviceId): void
+    {
+        $objectNames = [
+            'InternetGatewayDevice.WANDevice.1',
+            'InternetGatewayDevice.WANDevice.1.WANPONInterfaceConfig',
+            'InternetGatewayDevice.WANDevice.1.X_ZTE-COM_WANPONInterfaceConfig',
+            'InternetGatewayDevice.WANDevice.1.X_ZTE-COM_EPONInterfaceConfig',
+            'InternetGatewayDevice.WANDevice.1.X_CT-COM_EponInterfaceConfig',
+            'InternetGatewayDevice.WANDevice.1.X_CT-COM_GponInterfaceConfig',
+            'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.X_CT-COM_WANEponLinkConfig',
+        ];
+
+        foreach ($objectNames as $objectName) {
+            try {
+                Http::timeout($this->timeout())
+                    ->acceptJson()
+                    ->withHeaders($this->headers())
+                    ->post($this->taskUrl($deviceId), [
+                        'name' => 'refreshObject',
+                        'objectName' => $objectName,
+                    ]);
+            } catch (ConnectionException) {
+                return;
+            }
+        }
+    }
+
     private function opticalInfo(array $parameters): array
     {
         return [
             'rx_power' => $this->firstParameterByNeedles($parameters, [
-                ['optical', 'input', 'power'],
-                ['receive', 'power'],
+                ['rxpower'],
                 ['rx', 'power'],
+                ['optical', 'input', 'power'],
+                ['input', 'power'],
+                ['receive', 'power'],
                 ['pon', 'rx', 'power'],
             ]),
             'tx_power' => $this->firstParameterByNeedles($parameters, [
-                ['optical', 'output', 'power'],
-                ['transmit', 'power'],
+                ['txpower'],
                 ['tx', 'power'],
+                ['optical', 'output', 'power'],
+                ['output', 'power'],
+                ['transmit', 'power'],
                 ['pon', 'tx', 'power'],
             ]),
             'supply_voltage' => $this->firstParameterByNeedles($parameters, [
+                ['supplyvoltage'],
                 ['supply', 'voltage'],
                 ['optic', 'voltage'],
             ]),
             'bias_current' => $this->firstParameterByNeedles($parameters, [
+                ['biascurrent'],
                 ['bias', 'current'],
                 ['transmitter', 'current'],
             ]),
             'temperature' => $this->firstParameterByNeedles($parameters, [
+                ['temperature'],
                 ['operating', 'temperature'],
                 ['optic', 'temperature'],
                 ['module', 'temperature'],
             ]),
             'pon_status' => $this->firstParameterByNeedles($parameters, [
+                ['eponstate'],
                 ['epon', 'state'],
+                ['gpon', 'state'],
                 ['pon', 'state'],
                 ['registration', 'status'],
             ]),
