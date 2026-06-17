@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo('/dashboard');
         $middleware->validateCsrfTokens(except: [
             'customers/activities/webhook',
+            'customers/*/ont-admin-proxy',
+            'customers/*/ont-admin-proxy/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

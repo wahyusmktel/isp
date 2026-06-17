@@ -108,6 +108,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/customers/activities/latest', [CustomerActivityController::class, 'latestApi'])->name('customers.activities.latest');
     Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
     Route::get('/customers/{customer}/live-traffic', [CustomerController::class, 'liveTraffic'])->name('customers.live_traffic');
+    Route::match(['GET', 'POST'], '/customers/{customer}/ont-admin-proxy/{path?}', [CustomerController::class, 'ontAdminProxy'])
+        ->where('path', '.*')
+        ->name('customers.ont_admin_proxy');
     Route::get('/customers/{customer}/ont-info', [CustomerController::class, 'ontInfo'])->name('customers.ont_info');
     Route::patch('/customers/{customer}/acs-device', [CustomerController::class, 'updateAcsDevice'])->name('customers.acs_device');
     Route::post('/customers/{customer}/wifi', [CustomerController::class, 'updateWifi'])->name('customers.wifi.update');

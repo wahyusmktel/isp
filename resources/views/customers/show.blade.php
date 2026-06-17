@@ -405,7 +405,7 @@
                 </div>
             </div>
             <div class="bg-amber-50 border-b border-amber-100 px-4 py-2 text-xs text-amber-800">
-                Jika halaman tidak tampil, pastikan server/client bisa route ke IP pelanggan dan browser tidak memblokir HTTP dari halaman HTTPS.
+                Halaman admin ONT dibuka lewat proxy HTTPS aplikasi. Jika tidak tampil, pastikan server Ubuntu bisa route/ping ke IP pelanggan.
             </div>
             <iframe id="ont-admin-frame" src="about:blank" class="w-full flex-1 bg-white" referrerpolicy="no-referrer"></iframe>
         </div>
@@ -594,6 +594,7 @@ let DETAIL_HAS_ACS = {{ filled($customer->acs_device_id) ? 'true' : 'false' }};
 let DETAIL_MODAL_MAXIMIZED = false;
 let DETAIL_MODAL_DRAG = null;
 let ONT_ADMIN_URL = '';
+const ONT_ADMIN_PROXY_BASE = @json("/customers/{$customer->id}/ont-admin-proxy");
 let ONT_ADMIN_MAXIMIZED = false;
 
 function escapeHtml(value) {
@@ -617,8 +618,8 @@ function openOntAdminModal(ipAddress) {
     const frame = document.getElementById('ont-admin-frame');
     const label = document.getElementById('ont-admin-url-label');
 
-    ONT_ADMIN_URL = `http://${ipAddress}:80/`;
-    label.textContent = ONT_ADMIN_URL;
+    ONT_ADMIN_URL = `${ONT_ADMIN_PROXY_BASE}/`;
+    label.textContent = `http://${ipAddress}:80/ via proxy`;
     frame.src = ONT_ADMIN_URL;
 
     modal.classList.remove('hidden');

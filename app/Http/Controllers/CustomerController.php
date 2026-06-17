@@ -10,6 +10,7 @@ use App\Services\HisfocusOltService;
 use App\Services\MikrotikService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class CustomerController extends Controller
 {
@@ -150,6 +151,79 @@ class CustomerController extends Controller
             'uptime' => $uptime,
             'usage' => $usageData,
         ]);
+    }
+
+    public function ontAdminProxy(Request $request, Customer $customer, string $path = '')
+    {
+        if (blank($customer->pppoe_user) || blank($customer->ip_address)) {
+            abort(404, 'Pelanggan belum memiliki mapping PPPoE dan IP Address.');
+        }
+
+        $targetUrl = 'http://'.$customer->ip_address.':80/'.ltrim($path, '/');
+        if ($request->getQueryString()) {
+            $targetUrl .= '?'.$request->getQueryString();
+        }
+
+        $headers = collect($request->headers->all())
+            ->mapWithKeys(fn ($values, $key) => [$key => implode(', ', $values)])
+            ->except([
+                'host',
+                'connection',
+                'content-length',
+                'content-encoding',
+                'x-csrf-token',
+                'x-xsrf-token',
+                'sec-fetch-site',
+                'sec-fetch-mode',
+                'sec-fetch-dest',
+                'sec-fetch-user',
+            ])
+            ->all();
+
+        if ($request->headers->has('cookie')) {
+            $headers['cookie'] = collect(explode(';', $request->headers->get('cookie')))
+                ->map(fn ($cookie) => trim($cookie))
+                ->reject(fn ($cookie) => str_starts_with($cookie, 'laravel_session=') || str_starts_with($cookie, 'XSRF-TOKEN='))
+                ->implode('; ');
+        }
+
+        try {
+            $upstream = Http::timeout(15)
+                ->withHeaders($headers)
+                ->withOptions(['allow_redirects' => false])
+                ->send($request->method(), $targetUrl, [
+                    'body' => $request->getContent(),
+                ]);
+        } catch (\Throwable $e) {
+            return response(
+                '<div style="font-family:Arial,sans-serif;padding:24px;color:#111827">'.
+                '<h2 style="margin:0 0 8px">Admin ONT tidak dapat diakses</h2>'.
+                '<p style="margin:0 0 12px;color:#4b5563">Server aplikasi belum bisa terhubung ke <code>http://'.e($customer->ip_address).':80</code>.</p>'.
+                '<pre style="white-space:pre-wrap;background:#f3f4f6;padding:12px;border-radius:8px">'.e($e->getMessage()).'</pre>'.
+                '</div>',
+                502,
+                ['Content-Type' => 'text/html; charset=UTF-8']
+            );
+        }
+
+        $contentType = $upstream->header('Content-Type', 'text/html; charset=UTF-8');
+        $body = $upstream->body();
+
+        if (str_contains(strtolower($contentType), 'text/html')) {
+            $body = $this->rewriteOntAdminHtml($body, $customer, trim($path, '/'));
+        } elseif (str_contains(strtolower($contentType), 'text/css')) {
+            $body = $this->rewriteOntAdminCss($body, $customer, trim($path, '/'));
+        }
+
+        $responseHeaders = ['Content-Type' => $contentType];
+        if ($upstream->header('Location')) {
+            $responseHeaders['Location'] = $this->rewriteOntAdminUrl($upstream->header('Location'), $customer, trim($path, '/'));
+        }
+        if ($upstream->header('Set-Cookie')) {
+            $responseHeaders['Set-Cookie'] = $upstream->header('Set-Cookie');
+        }
+
+        return response($body, $upstream->status(), $responseHeaders);
     }
 
     public function store(Request $request): JsonResponse
@@ -341,6 +415,76 @@ class CustomerController extends Controller
             'message' => "Berhasil generate {$count} data pelanggan dummy.",
             'customers' => $generated,
         ]);
+    }
+
+    private function rewriteOntAdminHtml(string $body, Customer $customer, string $currentPath): string
+    {
+        $body = str_replace(
+            [
+                'http://'.$customer->ip_address.':80/',
+                'http://'.$customer->ip_address.'/',
+                'http://'.$customer->ip_address.':80',
+                'http://'.$customer->ip_address,
+            ],
+            $this->ontAdminProxyBase($customer).'/',
+            $body
+        );
+
+        return preg_replace_callback(
+            '/\b(href|src|action)=([\'"])(?!https?:|\/\/|#|javascript:|data:|mailto:|tel:)([^\'"]*)\2/i',
+            function (array $matches) use ($customer, $currentPath) {
+                $url = trim($matches[3]);
+                if ($url === '') {
+                    return $matches[0];
+                }
+
+                return $matches[1].'='.$matches[2].$this->rewriteOntAdminUrl($url, $customer, $currentPath).$matches[2];
+            },
+            $body
+        ) ?? $body;
+    }
+
+    private function rewriteOntAdminCss(string $body, Customer $customer, string $currentPath): string
+    {
+        return preg_replace_callback(
+            '/url\(([\'"]?)(?!https?:|\/\/|data:)([^)\'"]+)\1\)/i',
+            function (array $matches) use ($customer, $currentPath) {
+                $url = trim($matches[2]);
+                if ($url === '') {
+                    return $matches[0];
+                }
+
+                return 'url('.$matches[1].$this->rewriteOntAdminUrl($url, $customer, $currentPath).$matches[1].')';
+            },
+            $body
+        ) ?? $body;
+    }
+
+    private function rewriteOntAdminUrl(string $url, Customer $customer, string $currentPath = ''): string
+    {
+        $proxyBase = $this->ontAdminProxyBase($customer);
+        $url = trim($url);
+
+        if ($url === '' || str_starts_with($url, '#') || preg_match('/^(https?:|\/\/|javascript:|data:|mailto:|tel:)/i', $url)) {
+            $pattern = '#^http://'.preg_quote($customer->ip_address, '#').'(?::80)?/?#i';
+            return preg_replace($pattern, $proxyBase.'/', $url) ?? $url;
+        }
+
+        if (str_starts_with($url, '/')) {
+            return $proxyBase.$url;
+        }
+
+        if (str_starts_with($url, '?')) {
+            return $proxyBase.'/'.ltrim($currentPath, '/').$url;
+        }
+
+        $directory = trim(str_replace('\\', '/', dirname($currentPath)), './');
+        return $proxyBase.'/'.($directory !== '' ? $directory.'/' : '').ltrim($url, '/');
+    }
+
+    private function ontAdminProxyBase(Customer $customer): string
+    {
+        return "/customers/{$customer->id}/ont-admin-proxy";
     }
 
     private function rules(): array
