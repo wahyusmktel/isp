@@ -143,8 +143,8 @@
                         <p id="ont-temperature" class="text-sm font-bold text-gray-900 font-mono">-</p>
                     </div>
                     <div>
-                        <p class="text-[10px] text-gray-400">Voltage</p>
-                        <p id="ont-voltage" class="text-sm font-bold text-gray-900 font-mono">-</p>
+                        <p class="text-[10px] text-gray-400">Distance</p>
+                        <p id="ont-distance" class="text-sm font-bold text-gray-900 font-mono">-</p>
                     </div>
                     <div>
                         <p class="text-[10px] text-gray-400">Bias Current</p>
@@ -256,12 +256,6 @@ document.addEventListener("DOMContentLoaded", function() {
         el.textContent = value === null || value === undefined || value === '' ? '-' : `${value}${unit}`;
     }
 
-    function formatVoltage(value) {
-        const number = Number(value);
-        if (!Number.isFinite(number)) return value;
-        return number > 1000 ? `${(number / 1000000).toFixed(2)} V` : `${number} V`;
-    }
-
     function rxQuality(rxPower) {
         if (rxPower === null || rxPower === undefined || rxPower === '') {
             return { label: '-', cls: 'bg-gray-100 text-gray-500' };
@@ -313,7 +307,7 @@ document.addEventListener("DOMContentLoaded", function() {
             setText('ont-rx-power', optical.rx_power, ' dBm');
             setText('ont-tx-power', optical.tx_power, ' dBm');
             setText('ont-temperature', optical.temperature, ' °C');
-            setText('ont-voltage', formatVoltage(optical.supply_voltage));
+            setText('ont-distance', optical.distance, ' m');
             setText('ont-bias-current', optical.bias_current, ' uA');
             setText('ont-pon-status', optical.pon_status);
 
@@ -321,7 +315,7 @@ document.addEventListener("DOMContentLoaded", function() {
             badgeEl.textContent = quality.label;
             badgeEl.className = `inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${quality.cls}`;
             statusEl.textContent = data.has_optical_data
-                ? 'Data terakhir dari GenieACS.'
+                ? `Data terakhir dari ${data.source === 'olt' ? 'OLT HisFocus' : 'GenieACS'}.`
                 : 'Parameter optik belum tersedia di GenieACS. Klik Refresh, lalu coba lagi beberapa detik.';
         } catch (err) {
             statusEl.textContent = 'Koneksi ke aplikasi bermasalah.';

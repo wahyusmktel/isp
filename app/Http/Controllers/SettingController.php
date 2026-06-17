@@ -14,6 +14,8 @@ class SettingController extends Controller
         'tagihan' => ['billing_date', 'grace_period', 'late_fee', 'bank_account', 'currency', 'ewallet', 'custom_billing_enabled'],
         'jaringan' => [
             'network_type', 'upstream', 'total_bandwidth', 'ip_range', 'dns', 'contention',
+            'hisfocus_olt_base_url', 'hisfocus_olt_username', 'hisfocus_olt_password',
+            'hisfocus_olt_login_path', 'hisfocus_olt_onu_list_urls', 'hisfocus_olt_timeout',
             'genieacs_nbi_url', 'genieacs_api_token', 'genieacs_wifi_ssid_parameter',
             'genieacs_wifi_password_parameter', 'genieacs_http_timeout', 'genieacs_task_timeout',
         ],

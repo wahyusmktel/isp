@@ -266,6 +266,48 @@ $s = fn(string $key, string $default = '') => $settings[$key] ?? $default;
                 <div class="lg:col-span-3 pt-2 border-t border-gray-100">
                     <div class="flex items-center justify-between gap-3 mb-4">
                         <div>
+                            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Integrasi OLT HisFocus</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Dipakai untuk membaca status ONU dan redaman optik dari tabel ONU List</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+                        <div class="lg:col-span-2">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">OLT Base URL</label>
+                            <input type="url" name="hisfocus_olt_base_url" value="{{ $s('hisfocus_olt_base_url', 'http://192.168.0.88') }}" placeholder="http://192.168.0.88"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Timeout (detik)</label>
+                            <input type="number" name="hisfocus_olt_timeout" value="{{ $s('hisfocus_olt_timeout', '15') }}" min="3" max="120"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Username OLT</label>
+                            <input type="text" name="hisfocus_olt_username" value="{{ $s('hisfocus_olt_username', 'admin') }}"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Password OLT</label>
+                            <input type="password" name="hisfocus_olt_password" value="{{ $s('hisfocus_olt_password') }}"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Login Path</label>
+                            <input type="text" name="hisfocus_olt_login_path" value="{{ $s('hisfocus_olt_login_path') }}" placeholder="Kosongkan jika belum perlu"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white font-mono">
+                        </div>
+                        <div class="lg:col-span-3">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">URL ONU List</label>
+                            <textarea name="hisfocus_olt_onu_list_urls" rows="3" placeholder="Satu URL per baris, contoh: /path/pon-0-1-1.asp"
+                                      class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white resize-none font-mono">{{ $s('hisfocus_olt_onu_list_urls') }}</textarea>
+                            <p class="text-[10px] text-gray-400 mt-1">Ambil URL dari DevTools Network saat membuka tabel PON 0/1/1 dan 0/1/2.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-3 pt-2 border-t border-gray-100">
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <div>
                             <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Integrasi GenieACS</h3>
                             <p class="text-xs text-gray-400 mt-0.5">Dipakai aplikasi untuk mengirim task TR-069 ke ONT pelanggan</p>
                         </div>

@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Package;
 use App\Models\Router;
 use App\Services\GenieAcsService;
+use App\Services\HisfocusOltService;
 use App\Services\MikrotikService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -226,16 +227,23 @@ class CustomerController extends Controller
         ]);
     }
 
-    public function ontInfo(Request $request, Customer $customer, GenieAcsService $genieAcs): JsonResponse
+    public function ontInfo(Request $request, Customer $customer, GenieAcsService $genieAcs, HisfocusOltService $hisfocusOlt): JsonResponse
     {
+        $oltResult = $hisfocusOlt->customerOpticalInfo($customer);
+
+        if (($oltResult['success'] ?? false) && ($oltResult['has_optical_data'] ?? false)) {
+            return response()->json($oltResult);
+        }
+
         if (blank($customer->acs_device_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Pelanggan belum memiliki ACS Device ID.',
+                'message' => $oltResult['message'] ?? 'Pelanggan belum memiliki ACS Device ID.',
             ]);
         }
 
         $result = $genieAcs->deviceInfo($customer->acs_device_id, $request->boolean('refresh'));
+        $result['fallback_message'] = $oltResult['message'] ?? null;
 
         return response()->json($result);
     }
