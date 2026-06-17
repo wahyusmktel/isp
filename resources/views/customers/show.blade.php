@@ -9,9 +9,18 @@
     <a href="{{ route('customers.index') }}" class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-gray-500 hover:text-gray-900 shadow-sm border border-gray-100 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
     </a>
-    <div>
-        <h1 class="text-xl font-bold text-gray-900">{{ $customer->name }}</h1>
-        <p class="text-sm text-gray-400 mt-0.5">ID: {{ $customer->customer_number ?? '-' }} | Pemantauan Trafik dan Detail Pelanggan</p>
+    <div class="min-w-0 flex-1">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+            <h1 id="customer-name-heading" class="text-xl font-bold text-gray-900 truncate">{{ $customer->name }}</h1>
+            <button type="button" onclick="openCustomerEditModal()"
+                    class="inline-flex items-center gap-1.5 self-start px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Edit Data
+            </button>
+        </div>
+        <p id="customer-subtitle" class="text-sm text-gray-400 mt-0.5">ID: {{ $customer->customer_number ?? '-' }} | Pemantauan Trafik dan Detail Pelanggan</p>
     </div>
 </div>
 
@@ -102,6 +111,64 @@
                 </div>
             </div>
         </div>
+
+        @if(empty($customer->pppoe_user))
+        <div id="pppoe-map-card" class="bg-white rounded-2xl border border-amber-100 p-6 shadow-sm">
+            <div class="flex items-start justify-between gap-3 mb-4">
+                <div>
+                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Mapping PPPoE</h3>
+                    <p class="text-xs text-gray-400 mt-1">Pilih router, ambil akun PPPoE, lalu mapping langsung ke pelanggan ini.</p>
+                </div>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 uppercase">
+                    Belum Mapped
+                </span>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Router Mikrotik</label>
+                    <select id="detail-router-select"
+                            class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                        <option value="">Pilih router...</option>
+                        @foreach($routers as $router)
+                            <option value="{{ $router->id }}">{{ $router->name }} ({{ $router->host }})</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <button type="button" onclick="fetchDetailPppoeSecrets()" id="detail-fetch-pppoe-btn"
+                        class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors disabled:opacity-60">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    <span id="detail-fetch-pppoe-label">Ambil Akun PPPoE</span>
+                </button>
+
+                <div id="detail-pppoe-result" class="hidden space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Akun PPPoE Tersedia</label>
+                        <select id="detail-pppoe-select"
+                                class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                            <option value="">Pilih akun PPPoE...</option>
+                        </select>
+                        <p id="detail-pppoe-hint" class="text-[10px] text-gray-400 mt-1"></p>
+                    </div>
+
+                    <div id="detail-pppoe-preview" class="hidden rounded-xl bg-gray-50 border border-gray-100 p-3 text-xs text-gray-600"></div>
+
+                    <button type="button" onclick="mapDetailSelectedPppoe()" id="detail-map-pppoe-btn" disabled
+                            class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-500 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                        </svg>
+                        Mapping ke {{ $customer->name }}
+                    </button>
+                </div>
+
+                <p id="detail-pppoe-message" class="hidden text-xs rounded-xl px-3 py-2"></p>
+            </div>
+        </div>
+        @endif
 
         <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
             <div class="flex items-center justify-between gap-3 mb-4">
@@ -225,11 +292,395 @@
     </div>
 </div>
 
+{{-- Edit Customer Modal --}}
+<div id="detail-customer-modal" class="fixed inset-0 z-50 hidden" aria-modal="true" role="dialog">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeCustomerEditModal()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4 overflow-y-auto">
+        <div id="detail-customer-modal-card"
+             class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-4 transition-all duration-200 scale-95 opacity-0">
+            <div class="flex items-start justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+                <div>
+                    <h2 class="text-base font-bold text-gray-900">Edit Data Pelanggan</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">Perbarui data identitas, layanan, dan jaringan pelanggan</p>
+                </div>
+                <button type="button" onclick="closeCustomerEditModal()"
+                        class="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="detail-customer-form" class="px-6 py-5 space-y-5">
+                @csrf
+                <input type="hidden" name="_method" value="PUT">
+                <input type="hidden" name="latitude" value="{{ $customer->latitude }}">
+                <input type="hidden" name="longitude" value="{{ $customer->longitude }}">
+
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Identitas</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Nama Pelanggan <span class="text-red-500">*</span></label>
+                            <input type="text" id="edit-name" name="name" value="{{ $customer->name }}" required maxlength="150"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                            <p class="detail-edit-err hidden text-xs text-red-500 mt-1" data-field="name"></p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Telepon / WhatsApp</label>
+                            <input type="text" id="edit-phone" name="phone" value="{{ $customer->phone }}" maxlength="20"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Email</label>
+                            <input type="email" id="edit-email" name="email" value="{{ $customer->email }}" maxlength="150"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                            <p class="detail-edit-err hidden text-xs text-red-500 mt-1" data-field="email"></p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Status <span class="text-red-500">*</span></label>
+                            <select id="edit-status" name="status"
+                                    class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                                <option value="aktif" @selected($customer->status === 'aktif')>Aktif</option>
+                                <option value="suspend" @selected($customer->status === 'suspend')>Suspend</option>
+                                <option value="terminate" @selected($customer->status === 'terminate')>Terminate</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Alamat Pemasangan</label>
+                            <textarea id="edit-address" name="address" rows="2"
+                                      class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white resize-none">{{ $customer->address }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Layanan</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Paket Internet <span class="text-red-500">*</span></label>
+                            <select id="edit-package" name="package_id" required
+                                    class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                                <option value="">Pilih paket...</option>
+                                @foreach($packages as $package)
+                                    <option value="{{ $package->id }}" @selected($customer->package_id === $package->id)>
+                                        {{ $package->name }} - Rp {{ number_format($package->price, 0, ',', '.') }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="detail-edit-err hidden text-xs text-red-500 mt-1" data-field="package_id"></p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Tanggal Bergabung <span class="text-red-500">*</span></label>
+                            <input type="date" id="edit-join-date" name="join_date" value="{{ $customer->join_date?->format('Y-m-d') }}" required
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                            <p class="detail-edit-err hidden text-xs text-red-500 mt-1" data-field="join_date"></p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Tanggal Tagihan</label>
+                            <select id="edit-billing-date" name="billing_date"
+                                    class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                                @for($day = 1; $day <= 28; $day++)
+                                    <option value="{{ $day }}" @selected((int) ($customer->billing_date ?? 1) === $day)>Tanggal {{ $day }}</option>
+                                @endfor
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">IP Address</label>
+                            <input type="text" id="edit-ip-address" name="ip_address" value="{{ $customer->ip_address }}" maxlength="45"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white font-mono">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Jaringan</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Username PPPoE</label>
+                            <input type="text" id="edit-pppoe-user" name="pppoe_user" value="{{ $customer->pppoe_user }}" maxlength="100"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">ID ONT / ONU</label>
+                            <input type="text" id="edit-onu-id" name="onu_id" value="{{ $customer->onu_id }}" maxlength="100"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">ACS Device ID</label>
+                            <input type="text" id="edit-acs-device" name="acs_device_id" value="{{ $customer->acs_device_id }}" maxlength="255"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Serial Number ONT</label>
+                            <input type="text" id="edit-ont-serial" name="ont_serial_number" value="{{ $customer->ont_serial_number }}" maxlength="100"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white font-mono">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">SSID WiFi Tercatat</label>
+                            <input type="text" id="edit-wifi-ssid" name="wifi_ssid" value="{{ $customer->wifi_ssid }}" maxlength="32"
+                                   class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Catatan</label>
+                    <textarea id="edit-notes" name="notes" rows="2" maxlength="1000"
+                              class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white resize-none">{{ $customer->notes }}</textarea>
+                </div>
+
+                <div id="detail-edit-message" class="hidden text-xs rounded-xl px-3 py-2"></div>
+
+                <div class="flex items-center justify-end gap-2 pt-4 border-t border-gray-100">
+                    <button type="button" onclick="closeCustomerEditModal()"
+                            class="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" id="detail-edit-save-btn"
+                            class="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-500 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span id="detail-edit-save-text">Perbarui</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+const DETAIL_CUSTOMER_ID = {{ $customer->id }};
+const DETAIL_MAPPED_PPPOE = @json($mappedPppoeUsers);
+let DETAIL_SECRETS = [];
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    }[char]));
+}
+
+function showInlineMessage(el, type, message) {
+    if (!el) return;
+    el.textContent = message;
+    el.classList.remove('hidden', 'bg-green-50', 'text-green-700', 'bg-red-50', 'text-red-700', 'bg-blue-50', 'text-blue-700');
+    if (type === 'success') el.classList.add('bg-green-50', 'text-green-700');
+    else if (type === 'info') el.classList.add('bg-blue-50', 'text-blue-700');
+    else el.classList.add('bg-red-50', 'text-red-700');
+}
+
+async function fetchDetailPppoeSecrets() {
+    const routerId = document.getElementById('detail-router-select')?.value;
+    const btn = document.getElementById('detail-fetch-pppoe-btn');
+    const label = document.getElementById('detail-fetch-pppoe-label');
+    const result = document.getElementById('detail-pppoe-result');
+    const select = document.getElementById('detail-pppoe-select');
+    const hint = document.getElementById('detail-pppoe-hint');
+    const message = document.getElementById('detail-pppoe-message');
+    const mapBtn = document.getElementById('detail-map-pppoe-btn');
+
+    if (!routerId) {
+        showInlineMessage(message, 'error', 'Pilih router terlebih dahulu.');
+        return;
+    }
+
+    btn.disabled = true;
+    label.textContent = 'Mengambil data...';
+    message?.classList.add('hidden');
+
+    try {
+        const response = await fetch(`/pppoe-mapping/${routerId}/secrets`, {
+            headers: { 'Accept': 'application/json' },
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            showInlineMessage(message, 'error', data.message || 'Gagal mengambil data PPPoE.');
+            return;
+        }
+
+        DETAIL_SECRETS = data.secrets || [];
+        const available = DETAIL_SECRETS.filter(secret => !DETAIL_MAPPED_PPPOE[secret.username]);
+        select.innerHTML = '<option value="">Pilih akun PPPoE...</option>' + available.map(secret => {
+            const originalIndex = DETAIL_SECRETS.findIndex(item => item.username === secret.username);
+            const status = secret.online ? 'Online' : 'Offline';
+            const profile = secret.profile ? ` - ${escapeHtml(secret.profile)}` : '';
+            return `<option value="${originalIndex}">${escapeHtml(secret.username)} (${status}${profile})</option>`;
+        }).join('');
+
+        hint.textContent = `${available.length} akun belum dimapping dari ${DETAIL_SECRETS.length} akun PPPoE di ${data.router_name}.`;
+        result.classList.remove('hidden');
+        if (mapBtn) mapBtn.disabled = true;
+        renderDetailPppoePreview();
+        showInlineMessage(message, 'success', 'Data PPPoE berhasil diambil.');
+    } catch (error) {
+        showInlineMessage(message, 'error', 'Gagal mengambil data PPPoE: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        label.textContent = 'Ambil Akun PPPoE';
+    }
+}
+
+function renderDetailPppoePreview() {
+    const select = document.getElementById('detail-pppoe-select');
+    const preview = document.getElementById('detail-pppoe-preview');
+    const mapBtn = document.getElementById('detail-map-pppoe-btn');
+    const idx = select?.value;
+    const secret = idx !== '' ? DETAIL_SECRETS[Number(idx)] : null;
+
+    if (!secret) {
+        preview?.classList.add('hidden');
+        if (preview) preview.innerHTML = '';
+        if (mapBtn) mapBtn.disabled = true;
+        return;
+    }
+
+    preview.innerHTML = `
+        <div class="grid grid-cols-2 gap-2">
+            <div><span class="text-gray-400">Username:</span><br><span class="font-mono font-semibold text-gray-800">${escapeHtml(secret.username)}</span></div>
+            <div><span class="text-gray-400">Status:</span><br><span class="${secret.online ? 'text-green-600' : 'text-gray-500'} font-semibold">${secret.online ? 'Online' : 'Offline'}</span></div>
+            <div><span class="text-gray-400">IP:</span><br><span class="font-mono">${escapeHtml(secret.ip || '-')}</span></div>
+            <div><span class="text-gray-400">MAC ONT:</span><br><span class="font-mono">${escapeHtml(secret.mac || '-')}</span></div>
+            <div class="col-span-2"><span class="text-gray-400">Profile:</span><br><span>${escapeHtml(secret.profile || '-')}</span></div>
+        </div>
+    `;
+    preview.classList.remove('hidden');
+    if (mapBtn) mapBtn.disabled = false;
+}
+
+async function mapDetailSelectedPppoe() {
+    const select = document.getElementById('detail-pppoe-select');
+    const mapBtn = document.getElementById('detail-map-pppoe-btn');
+    const message = document.getElementById('detail-pppoe-message');
+    const idx = select?.value;
+    const secret = idx !== '' ? DETAIL_SECRETS[Number(idx)] : null;
+
+    if (!secret) {
+        showInlineMessage(message, 'error', 'Pilih akun PPPoE terlebih dahulu.');
+        return;
+    }
+
+    mapBtn.disabled = true;
+    message?.classList.add('hidden');
+
+    try {
+        const response = await fetch('/pppoe-mapping/map', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                customer_id: DETAIL_CUSTOMER_ID,
+                pppoe_user: secret.username,
+                ip_address: secret.ip || null,
+                mac_ont: secret.mac || null,
+            }),
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            showInlineMessage(message, 'error', data.message || 'Gagal mapping PPPoE.');
+            mapBtn.disabled = false;
+            return;
+        }
+
+        showInlineMessage(message, 'success', data.message + ' Halaman akan dimuat ulang...');
+        setTimeout(() => window.location.reload(), 900);
+    } catch (error) {
+        showInlineMessage(message, 'error', 'Gagal mapping PPPoE: ' + error.message);
+        mapBtn.disabled = false;
+    }
+}
+
+function openCustomerEditModal() {
+    const modal = document.getElementById('detail-customer-modal');
+    const card = document.getElementById('detail-customer-modal-card');
+    document.getElementById('detail-edit-message')?.classList.add('hidden');
+    document.querySelectorAll('.detail-edit-err').forEach(el => {
+        el.textContent = '';
+        el.classList.add('hidden');
+    });
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        card.classList.remove('scale-95', 'opacity-0');
+        card.classList.add('scale-100', 'opacity-100');
+    }));
+}
+
+function closeCustomerEditModal() {
+    const modal = document.getElementById('detail-customer-modal');
+    const card = document.getElementById('detail-customer-modal-card');
+    card.classList.add('scale-95', 'opacity-0');
+    card.classList.remove('scale-100', 'opacity-100');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }, 200);
+}
+
+async function submitCustomerEdit(event) {
+    event.preventDefault();
+    const form = event.target;
+    const btn = document.getElementById('detail-edit-save-btn');
+    const label = document.getElementById('detail-edit-save-text');
+    const message = document.getElementById('detail-edit-message');
+
+    document.querySelectorAll('.detail-edit-err').forEach(el => {
+        el.textContent = '';
+        el.classList.add('hidden');
+    });
+    message.classList.add('hidden');
+    btn.disabled = true;
+    label.textContent = 'Menyimpan...';
+
+    try {
+        const response = await fetch('/customers/{{ $customer->id }}', {
+            method: 'POST',
+            body: new FormData(form),
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            },
+        });
+        const data = await response.json();
+
+        if (response.status === 422 && data.errors) {
+            Object.entries(data.errors).forEach(([field, errors]) => {
+                const el = document.querySelector(`.detail-edit-err[data-field="${field}"]`);
+                if (el) {
+                    el.textContent = errors[0];
+                    el.classList.remove('hidden');
+                }
+            });
+            showInlineMessage(message, 'error', 'Periksa kembali isian form.');
+            return;
+        }
+
+        if (!response.ok || !data.success) {
+            showInlineMessage(message, 'error', data.message || 'Gagal memperbarui pelanggan.');
+            return;
+        }
+
+        showInlineMessage(message, 'success', data.message + ' Halaman akan dimuat ulang...');
+        setTimeout(() => window.location.reload(), 800);
+    } catch (error) {
+        showInlineMessage(message, 'error', 'Gagal memperbarui pelanggan: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        label.textContent = 'Perbarui';
+    }
+}
+
 function formatUptime(raw) {
     if (!raw) return '—';
     const m = raw.match(/(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/);
@@ -249,6 +700,8 @@ document.addEventListener("DOMContentLoaded", function() {
     const wifiBtn = document.getElementById('wifi-save-btn');
     const wifiBtnText = document.getElementById('wifi-save-text');
     const ontRefreshBtn = document.getElementById('ont-refresh-btn');
+    document.getElementById('detail-pppoe-select')?.addEventListener('change', renderDetailPppoePreview);
+    document.getElementById('detail-customer-form')?.addEventListener('submit', submitCustomerEdit);
 
     function setText(id, value, unit = '') {
         const el = document.getElementById(id);

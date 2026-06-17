@@ -37,8 +37,18 @@ class CustomerController extends Controller
     public function show(Customer $customer)
     {
         $customer->load('package');
+        $routers = Router::orderBy('name')->get(['id', 'name', 'host', 'status']);
+        $packages = Package::where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('price')
+            ->get(['id', 'name', 'category', 'price']);
+        $mappedPppoeUsers = Customer::query()
+            ->whereNotNull('pppoe_user')
+            ->where('pppoe_user', '!=', '')
+            ->where('id', '!=', $customer->id)
+            ->pluck('name', 'pppoe_user');
 
-        return view('customers.show', compact('customer'));
+        return view('customers.show', compact('customer', 'routers', 'packages', 'mappedPppoeUsers'));
     }
 
     public function search(Request $request): JsonResponse
