@@ -11,12 +11,16 @@ class Customer extends Model
         'customer_number', 'name', 'email', 'phone', 'address',
         'package_id', 'ip_address', 'pppoe_user', 'onu_id', 'mac_ont',
         'acs_device_id', 'ont_serial_number', 'wifi_ssid',
-        'status', 'join_date', 'billing_date', 'notes',
+        'status', 'is_isolated', 'isolated_at', 'isolation_reason', 'isolation_released_at',
+        'join_date', 'billing_date', 'notes',
         'latitude', 'longitude',
     ];
 
     protected $casts = [
         'join_date' => 'date',
+        'is_isolated' => 'boolean',
+        'isolated_at' => 'datetime',
+        'isolation_released_at' => 'datetime',
         'billing_date' => 'integer',
         'latitude' => 'float',
         'longitude' => 'float',
@@ -56,6 +60,9 @@ class Customer extends Model
             'ont_serial_number' => $this->ont_serial_number ?? '',
             'wifi_ssid' => $this->wifi_ssid ?? '',
             'status' => $this->status,
+            'is_isolated' => (bool) $this->is_isolated,
+            'isolated_at' => $this->isolated_at?->format('Y-m-d H:i:s') ?? '',
+            'isolation_reason' => $this->isolation_reason ?? '',
             'join_date' => $this->join_date?->format('Y-m-d') ?? '',
             'join_date_fmt' => $this->join_date?->format('d M Y') ?? '—',
             'billing_date' => $this->billing_date ?? 1,

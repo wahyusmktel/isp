@@ -10,6 +10,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\FinancialController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\IsolationController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\NewsAdminController;
 use App\Http\Controllers\NewsCommentController;
@@ -46,6 +47,7 @@ Route::post('/berita/{news}/komentar', [NewsCommentController::class, 'store'])-
 Route::get('/terms', function () {
     return view('terms');
 })->name('terms');
+Route::get('/isolir-portal', [IsolationController::class, 'portal'])->name('isolation.portal');
 
 // ─── Guest (belum login) ─────────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
@@ -128,6 +130,12 @@ Route::middleware('auth')->group(function () {
     Route::delete('/invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
     Route::patch('/invoices/{invoice}/status', [InvoiceController::class, 'updateStatus'])->name('invoices.status');
     Route::patch('/invoices/{invoice}/payment-method', [InvoiceController::class, 'updatePaymentMethod'])->name('invoices.payment_method');
+
+    Route::get('/isolir', [IsolationController::class, 'index'])->name('isolation.index');
+    Route::post('/isolir/settings', [IsolationController::class, 'updateSettings'])->name('isolation.settings');
+    Route::post('/isolir/run-auto', [IsolationController::class, 'runAutomatic'])->name('isolation.run_auto');
+    Route::post('/isolir/customers/{customer}', [IsolationController::class, 'isolate'])->name('isolation.customers.isolate');
+    Route::delete('/isolir/customers/{customer}', [IsolationController::class, 'release'])->name('isolation.customers.release');
 
     Route::get('/network', [RouterController::class, 'index'])->name('network.index');
     Route::post('/routers', [RouterController::class, 'store'])->name('routers.store');

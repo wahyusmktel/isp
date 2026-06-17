@@ -232,6 +232,17 @@ $statusCfg = [
                             </svg>
                         </a>
                         @if(auth()->user()->role === 'admin')
+                        <button onclick="toggleCustomerIsolation({{ $cust->id }}, {{ $cust->is_isolated ? 'true' : 'false' }}, this)"
+                                class="w-8 h-8 rounded-lg bg-gray-100 {{ $cust->is_isolated ? 'hover:bg-green-50 hover:text-green-600' : 'hover:bg-red-50 hover:text-red-500' }} text-gray-500 flex items-center justify-center transition-colors"
+                                title="{{ $cust->is_isolated ? 'Buka Isolir' : 'Isolir Pelanggan' }}">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                @if($cust->is_isolated)
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                @else
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                @endif
+                            </svg>
+                        </button>
                         <button onclick="openModal('edit', getCust({{ $cust->id }}))"
                                 class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-500 flex items-center justify-center transition-colors"
                                 title="Edit Pelanggan">
@@ -742,6 +753,14 @@ function buildRow(c) {
         </td>
         <td class="py-3.5 pr-5">
             <div class="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onclick='toggleCustomerIsolation(${c.id},${c.is_isolated ? 'true' : 'false'},this)'
+                        class="w-8 h-8 rounded-lg bg-gray-100 ${c.is_isolated ? 'hover:bg-green-50 hover:text-green-600' : 'hover:bg-red-50 hover:text-red-500'} text-gray-500 flex items-center justify-center transition-colors" title="${c.is_isolated ? 'Buka Isolir' : 'Isolir Pelanggan'}">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        ${c.is_isolated
+                            ? '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>'
+                            : '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>'}
+                    </svg>
+                </button>
                 <button onclick='openModal("edit",JSON.parse(this.dataset.c))' data-c="${cData}"
                         class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-500 flex items-center justify-center transition-colors" title="Edit">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -853,6 +872,34 @@ async function setStatus(id, status, btn) {
 }
 
 // ─── Dummy Generator ─────────────────────────────────────────────────────────
+async function toggleCustomerIsolation(id, isIsolated, btn) {
+    const action = isIsolated ? 'membuka isolir' : 'mengisolir';
+    if (!confirm(`Yakin ${action} pelanggan ini?`)) return;
+
+    btn.disabled = true;
+    try {
+        const res = await fetch(`/isolir/customers/${id}`, {
+            method: isIsolated ? 'DELETE' : 'POST',
+            headers: {
+                'X-CSRF-TOKEN': CSRF,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('success', data.message);
+            setTimeout(() => window.location.reload(), 700);
+        } else {
+            showToast('error', data.message || 'Operasi isolir gagal.');
+        }
+    } catch {
+        showToast('error', 'Koneksi bermasalah.');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
 function openDummyModal() {
     const modal = document.getElementById('dummy-modal');
     const card  = document.getElementById('dummy-card');
@@ -1340,6 +1387,7 @@ async function executeDelete() {
 // ─── Toast ────────────────────────────────────────────────────────────────────
 // Copy IP address buttons
 function enhanceIpCopyButtons() {
+    return;
     document.querySelectorAll('#cust-tbody tr[data-cust-row] td:nth-child(2) p.font-mono').forEach(ipEl => {
         if (ipEl.dataset.copyEnhanced === '1') return;
 

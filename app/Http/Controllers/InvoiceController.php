@@ -128,13 +128,14 @@ class InvoiceController extends Controller
 
         $periodInput = $request->get('period', now()->format('Y-m'));
         $period = \Carbon\Carbon::createFromFormat('Y-m', $periodInput)->startOfMonth();
-        $dueDate = $period->copy()->addDays(7);
 
         $customers = Customer::with('package')->where('status', 'aktif')->get();
         $count = 0;
 
         foreach ($customers as $customer) {
             if (!$customer->package) continue;
+            $billingDay = max(1, min((int) ($customer->billing_date ?? 1), $period->daysInMonth));
+            $dueDate = $period->copy()->day($billingDay);
 
             $exists = Invoice::where('customer_id', $customer->id)
                 ->whereYear('billing_period', $period->year)

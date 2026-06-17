@@ -51,6 +51,17 @@
         @endif
     </a>
 
+    <a href="{{ route('isolation.index') }}" class="sidebar-link {{ request()->routeIs('isolation.*') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Isolir Pelanggan">
+        <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        </svg>
+        <span class="sidebar-text whitespace-nowrap">Isolir</span>
+        @php $isolirCount = \App\Models\Customer::where('is_isolated', true)->count(); @endphp
+        @if($isolirCount > 0)
+        <span class="sidebar-badge ml-auto text-[10px] text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded font-semibold">{{ $isolirCount }}</span>
+        @endif
+    </a>
+
     <p class="sidebar-label text-[10px] font-semibold uppercase tracking-widest text-gray-600 px-3 pt-4 pb-1">Jaringan</p>
 
     @if(auth()->user()->role === 'admin')

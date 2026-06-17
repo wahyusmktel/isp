@@ -63,6 +63,60 @@ class MikrotikService
         ]));
     }
 
+    public function addAddressList(string $list, string $address, string $comment = ''): array
+    {
+        $existing = $this->findAddressList($list, $address);
+        if ($existing) {
+            return ['success' => true, 'message' => 'IP sudah ada di address-list.', 'id' => $existing['.id'] ?? null];
+        }
+
+        $response = $this->query('/ip/firewall/address-list/add', [
+            '=list=' . $list,
+            '=address=' . $address,
+            '=comment=' . $comment,
+        ]);
+
+        if (in_array('!done', $response, true)) {
+            return ['success' => true, 'message' => 'IP berhasil ditambahkan ke address-list.'];
+        }
+
+        return ['success' => false, 'message' => $this->extractMsg($response)];
+    }
+
+    public function removeAddressList(string $list, string $address): array
+    {
+        $removed = 0;
+        foreach ($this->findAddressLists($list, $address) as $item) {
+            if (empty($item['.id'])) {
+                continue;
+            }
+
+            $response = $this->query('/ip/firewall/address-list/remove', ['=.id=' . $item['.id']]);
+            if (in_array('!done', $response, true)) {
+                $removed++;
+            }
+        }
+
+        return ['success' => true, 'message' => "{$removed} address-list dihapus.", 'removed' => $removed];
+    }
+
+    public function removePppoeActiveByName(string $username): array
+    {
+        $removed = 0;
+        foreach ($this->getPppoeActives() as $active) {
+            if (($active['name'] ?? '') !== $username || empty($active['.id'])) {
+                continue;
+            }
+
+            $response = $this->query('/ppp/active/remove', ['=.id=' . $active['.id']]);
+            if (in_array('!done', $response, true)) {
+                $removed++;
+            }
+        }
+
+        return ['success' => true, 'message' => "{$removed} sesi PPPoE aktif diputus.", 'removed' => $removed];
+    }
+
     public function close(): void
     {
         if ($this->socket) {
@@ -111,6 +165,19 @@ class MikrotikService
     {
         $this->writeSentence($command, $attrs);
         return $this->readAll();
+    }
+
+    private function findAddressList(string $list, string $address): ?array
+    {
+        return $this->findAddressLists($list, $address)[0] ?? null;
+    }
+
+    private function findAddressLists(string $list, string $address): array
+    {
+        return array_values(array_filter(
+            $this->parseAll($this->query('/ip/firewall/address-list/print')),
+            fn (array $row) => ($row['list'] ?? '') === $list && ($row['address'] ?? '') === $address
+        ));
     }
 
     private function writeSentence(string $cmd, array $attrs): void
