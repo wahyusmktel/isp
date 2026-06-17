@@ -213,6 +213,8 @@ class CustomerController extends Controller
             $body = $this->rewriteOntAdminHtml($body, $customer, trim($path, '/'));
         } elseif (str_contains(strtolower($contentType), 'text/css')) {
             $body = $this->rewriteOntAdminCss($body, $customer, trim($path, '/'));
+        } elseif ($this->isOntAdminScriptResponse($contentType, $path)) {
+            $body = $this->rewriteOntAdminTextUrls($body, $customer, trim($path, '/'));
         }
 
         $responseHeaders = ['Content-Type' => $contentType];
@@ -419,18 +421,9 @@ class CustomerController extends Controller
 
     private function rewriteOntAdminHtml(string $body, Customer $customer, string $currentPath): string
     {
-        $body = str_replace(
-            [
-                'http://'.$customer->ip_address.':80/',
-                'http://'.$customer->ip_address.'/',
-                'http://'.$customer->ip_address.':80',
-                'http://'.$customer->ip_address,
-            ],
-            $this->ontAdminProxyBase($customer).'/',
-            $body
-        );
+        $body = $this->rewriteOntAdminTextUrls($body, $customer, $currentPath);
 
-        return preg_replace_callback(
+        $body = preg_replace_callback(
             '/\b(href|src|action)=([\'"])(?!https?:|\/\/|#|javascript:|data:|mailto:|tel:)([^\'"]*)\2/i',
             function (array $matches) use ($customer, $currentPath) {
                 $url = trim($matches[3]);
@@ -442,10 +435,14 @@ class CustomerController extends Controller
             },
             $body
         ) ?? $body;
+
+        return $this->injectOntAdminProxyShim($body, $customer);
     }
 
     private function rewriteOntAdminCss(string $body, Customer $customer, string $currentPath): string
     {
+        $body = $this->rewriteOntAdminTextUrls($body, $customer, $currentPath);
+
         return preg_replace_callback(
             '/url\(([\'"]?)(?!https?:|\/\/|data:)([^)\'"]+)\1\)/i',
             function (array $matches) use ($customer, $currentPath) {
@@ -460,14 +457,31 @@ class CustomerController extends Controller
         ) ?? $body;
     }
 
+    private function rewriteOntAdminTextUrls(string $body, Customer $customer, string $currentPath): string
+    {
+        return preg_replace_callback(
+            '#http://(?:\d{1,3}\.){3}\d{1,3}(?::80)?(/[^\s\'")<>]*)?#i',
+            function (array $matches) use ($customer, $currentPath) {
+                return $this->rewriteOntAdminUrl($matches[0], $customer, $currentPath);
+            },
+            $body
+        ) ?? $body;
+    }
+
     private function rewriteOntAdminUrl(string $url, Customer $customer, string $currentPath = ''): string
     {
         $proxyBase = $this->ontAdminProxyBase($customer);
         $url = trim($url);
 
         if ($url === '' || str_starts_with($url, '#') || preg_match('/^(https?:|\/\/|javascript:|data:|mailto:|tel:)/i', $url)) {
-            $pattern = '#^http://'.preg_quote($customer->ip_address, '#').'(?::80)?/?#i';
-            return preg_replace($pattern, $proxyBase.'/', $url) ?? $url;
+            if (preg_match('#^http://((?:\d{1,3}\.){3}\d{1,3})(?::80)?(/.*)?$#i', $url, $matches)) {
+                $host = $matches[1];
+                if ($host === $customer->ip_address || $this->isPrivateIpv4($host)) {
+                    return $proxyBase.($matches[2] ?? '/');
+                }
+            }
+
+            return $url;
         }
 
         if (str_starts_with($url, '/')) {
@@ -485,6 +499,59 @@ class CustomerController extends Controller
     private function ontAdminProxyBase(Customer $customer): string
     {
         return "/customers/{$customer->id}/ont-admin-proxy";
+    }
+
+    private function injectOntAdminProxyShim(string $body, Customer $customer): string
+    {
+        $shim = '<script>(function(){'."\n".
+            'var PROXY_BASE='.json_encode($this->ontAdminProxyBase($customer)).';'."\n".
+            'function proxify(url){'."\n".
+            ' if(!url || typeof url!=="string") return url;'."\n".
+            ' if(url.indexOf(PROXY_BASE)===0 || /^(data:|mailto:|tel:|javascript:|#)/i.test(url)) return url;'."\n".
+            ' var m=url.match(/^http:\/\/(?:\d{1,3}\.){3}\d{1,3}(?::80)?(\/.*)?$/i);'."\n".
+            ' if(m) return PROXY_BASE+(m[1]||"/");'."\n".
+            ' if(url.charAt(0)==="/") return PROXY_BASE+url;'."\n".
+            ' if(url.charAt(0)==="?") return window.location.pathname+url;'."\n".
+            ' return url;'."\n".
+            '}'."\n".
+            'try{var xo=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(method,url){arguments[1]=proxify(url);return xo.apply(this,arguments);};}catch(e){}'."\n".
+            'try{var ff=window.fetch; if(ff){window.fetch=function(input,init){if(typeof input==="string"){input=proxify(input);}else if(input&&input.url){input=new Request(proxify(input.url),input);}return ff.call(this,input,init);};}}catch(e){}'."\n".
+            'document.addEventListener("click",function(ev){'."\n".
+            ' var el=ev.target && ev.target.closest ? ev.target.closest("[onclick*=openLink]") : null;'."\n".
+            ' if(!el) return;'."\n".
+            ' var onclick=el.getAttribute("onclick")||"";'."\n".
+            ' var match=onclick.match(/openLink\((?:\s*[\'\"])(.*?)(?:[\'\"])/);'."\n".
+            ' if(match&&match[1]){ev.preventDefault();ev.stopImmediatePropagation();window.location.href=proxify(match[1]);}'."\n".
+            '},true);'."\n".
+            'window.__ontAdminProxify=proxify;'."\n".
+            '})();</script>';
+
+        if (stripos($body, '</head>') !== false) {
+            return preg_replace('/<\/head>/i', $shim.'</head>', $body, 1) ?? $body;
+        }
+
+        if (stripos($body, '</body>') !== false) {
+            return preg_replace('/<\/body>/i', $shim.'</body>', $body, 1) ?? $body;
+        }
+
+        return $shim.$body;
+    }
+
+    private function isOntAdminScriptResponse(string $contentType, string $path): bool
+    {
+        $contentType = strtolower($contentType);
+        $path = strtolower($path);
+
+        return str_contains($contentType, 'javascript')
+            || str_contains($contentType, 'ecmascript')
+            || str_ends_with($path, '.js')
+            || str_ends_with($path, '.gch');
+    }
+
+    private function isPrivateIpv4(string $ip): bool
+    {
+        return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false
+            && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
     }
 
     private function rules(): array
