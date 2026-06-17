@@ -114,7 +114,7 @@ class HisfocusOltService
 
     private function findCustomerRow(string $html, Customer $customer): ?array
     {
-        foreach ($this->parseTables($html) as $row) {
+        foreach ($this->parseRows($html) as $row) {
             $onuId = $this->value($row, ['id', 'onu_id', 'onuid']);
             $mac = $this->value($row, ['mac_address', 'macaddress']);
 
@@ -128,6 +128,49 @@ class HisfocusOltService
         }
 
         return null;
+    }
+
+    private function parseRows(string $html): array
+    {
+        return array_merge($this->parseJavascriptOnuTable($html), $this->parseTables($html));
+    }
+
+    private function parseJavascriptOnuTable(string $html): array
+    {
+        if (! preg_match('/var\s+onutable\s*=\s*new\s+Array\s*\((.*?)\)\s*;/is', $html, $match)) {
+            return [];
+        }
+
+        $values = str_getcsv($match[1], ',', "'");
+        $values = array_map(fn (string $value) => trim($value), $values);
+        $rows = [];
+
+        foreach (array_chunk($values, 18) as $chunk) {
+            if (count($chunk) < 18 || blank($chunk[0])) {
+                continue;
+            }
+
+            $rows[] = [
+                'id' => $chunk[0],
+                'name' => $chunk[1],
+                'mac_address' => $chunk[2],
+                'status' => $chunk[3],
+                'version' => $chunk[4],
+                'chip_id' => $chunk[5],
+                'ports' => $chunk[6],
+                'temperature' => $this->cleanMetric($chunk[7]),
+                'tx_power' => $this->cleanMetric($chunk[10]),
+                'rx_power' => $this->cleanMetric($chunk[11]),
+                'running_time_seconds' => $chunk[12],
+                'deregister_count' => $chunk[13],
+                'offline_reason' => ((string) $chunk[14] === '1') ? 'Dying_gasp' : 'Timeout',
+                'rtt' => $chunk[15],
+                'register_time' => $chunk[16],
+                'deregister_time' => $chunk[17],
+            ];
+        }
+
+        return $rows;
     }
 
     private function parseTables(string $html): array
@@ -169,6 +212,13 @@ class HisfocusOltService
         }
 
         return $rows;
+    }
+
+    private function cleanMetric(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' || $value === '--' || $value === '-inf' ? null : $value;
     }
 
     private function looksLikeHeader(array $cells): bool
