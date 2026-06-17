@@ -108,7 +108,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/customers/activities/latest', [CustomerActivityController::class, 'latestApi'])->name('customers.activities.latest');
     Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
     Route::get('/customers/{customer}/live-traffic', [CustomerController::class, 'liveTraffic'])->name('customers.live_traffic');
-    Route::match(['GET', 'POST'], '/customers/{customer}/ont-admin-proxy/{path?}', [CustomerController::class, 'ontAdminProxy'])
+    Route::any('/customers/{customer}/ont-admin-proxy/{path?}', [CustomerController::class, 'ontAdminProxy'])
         ->where('path', '.*')
         ->name('customers.ont_admin_proxy');
     Route::get('/customers/{customer}/ont-info', [CustomerController::class, 'ontInfo'])->name('customers.ont_info');

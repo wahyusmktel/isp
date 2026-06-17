@@ -159,10 +159,15 @@ class CustomerController extends Controller
             abort(404, 'Pelanggan belum memiliki mapping PPPoE dan IP Address.');
         }
 
+        if (str_starts_with(ltrim($path, '/'), 'cdn-cgi/')) {
+            return response('', 204);
+        }
+
         $targetUrl = 'http://'.$customer->ip_address.':80/'.ltrim($path, '/');
         if ($request->getQueryString()) {
             $targetUrl .= '?'.$request->getQueryString();
         }
+        $targetOrigin = 'http://'.$customer->ip_address;
 
         $headers = collect($request->headers->all())
             ->mapWithKeys(fn ($values, $key) => [$key => implode(', ', $values)])
@@ -179,6 +184,8 @@ class CustomerController extends Controller
                 'sec-fetch-user',
             ])
             ->all();
+        $headers['referer'] = $targetOrigin.'/'.ltrim($path, '/');
+        $headers['origin'] = $targetOrigin;
 
         if ($request->headers->has('cookie')) {
             $headers['cookie'] = collect(explode(';', $request->headers->get('cookie')))
@@ -459,10 +466,18 @@ class CustomerController extends Controller
 
     private function rewriteOntAdminTextUrls(string $body, Customer $customer, string $currentPath): string
     {
-        return preg_replace_callback(
+        $body = preg_replace_callback(
             '#http://(?:\d{1,3}\.){3}\d{1,3}(?::80)?(/[^\s\'")<>]*)?#i',
             function (array $matches) use ($customer, $currentPath) {
                 return $this->rewriteOntAdminUrl($matches[0], $customer, $currentPath);
+            },
+            $body
+        ) ?? $body;
+
+        return preg_replace_callback(
+            '#([\'"])((?:\.\./)+(?:img|css|js|images|style|help|login|cgi-bin|web|common|template|lang|res|user|admin|status|network|wlan|security|management|dev_info)[^\'"]*)\1#i',
+            function (array $matches) use ($customer) {
+                return $matches[1].$this->ontAdminProxyBase($customer).'/'.ltrim(preg_replace('#^(?:\.\./)+#', '', $matches[2]), '/').$matches[1];
             },
             $body
         ) ?? $body;
@@ -485,6 +500,10 @@ class CustomerController extends Controller
         }
 
         if (str_starts_with($url, '/')) {
+            if (str_starts_with($url, '/cdn-cgi/')) {
+                return $url;
+            }
+
             return $proxyBase.$url;
         }
 
@@ -492,8 +511,8 @@ class CustomerController extends Controller
             return $proxyBase.'/'.ltrim($currentPath, '/').$url;
         }
 
-        $directory = trim(str_replace('\\', '/', dirname($currentPath)), './');
-        return $proxyBase.'/'.($directory !== '' ? $directory.'/' : '').ltrim($url, '/');
+        $normalized = $this->normalizeOntAdminRelativePath($url, $currentPath);
+        return $proxyBase.'/'.$normalized;
     }
 
     private function ontAdminProxyBase(Customer $customer): string
@@ -508,10 +527,12 @@ class CustomerController extends Controller
             'function proxify(url){'."\n".
             ' if(!url || typeof url!=="string") return url;'."\n".
             ' if(url.indexOf(PROXY_BASE)===0 || /^(data:|mailto:|tel:|javascript:|#)/i.test(url)) return url;'."\n".
+            ' if(url.indexOf("/cdn-cgi/")===0) return url;'."\n".
             ' var m=url.match(/^http:\/\/(?:\d{1,3}\.){3}\d{1,3}(?::80)?(\/.*)?$/i);'."\n".
             ' if(m) return PROXY_BASE+(m[1]||"/");'."\n".
             ' if(url.charAt(0)==="/") return PROXY_BASE+url;'."\n".
             ' if(url.charAt(0)==="?") return window.location.pathname+url;'."\n".
+            ' if(url.indexOf("../")===0) return PROXY_BASE+"/"+url.replace(/^(\\.\\.\\/)+/,"");'."\n".
             ' return url;'."\n".
             '}'."\n".
             'try{var xo=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(method,url){arguments[1]=proxify(url);return xo.apply(this,arguments);};}catch(e){}'."\n".
@@ -552,6 +573,31 @@ class CustomerController extends Controller
     {
         return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false
             && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
+    }
+
+    private function normalizeOntAdminRelativePath(string $url, string $currentPath): string
+    {
+        $url = str_replace('\\', '/', trim($url));
+        if (str_starts_with($url, '../')) {
+            return ltrim(preg_replace('#^(?:\.\./)+#', '', $url), '/');
+        }
+
+        $directory = trim(str_replace('\\', '/', dirname($currentPath)), './');
+        $path = ($directory !== '' ? $directory.'/' : '').ltrim($url, '/');
+        $parts = [];
+
+        foreach (explode('/', $path) as $part) {
+            if ($part === '' || $part === '.') {
+                continue;
+            }
+            if ($part === '..') {
+                array_pop($parts);
+                continue;
+            }
+            $parts[] = $part;
+        }
+
+        return implode('/', $parts);
     }
 
     private function rules(): array
