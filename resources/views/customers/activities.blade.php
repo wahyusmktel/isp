@@ -4,6 +4,77 @@
 
 @section('content')
 
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-5">
+    <div class="xl:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+            <div>
+                <h3 class="font-bold text-gray-900">Paling Sering Putus Nyambung</h3>
+                <p class="text-xs text-gray-500">Pelanggan dengan disconnect terbanyak dalam {{ $disconnectSummary['window_hours'] }} jam terakhir</p>
+            </div>
+            <span class="inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                {{ $disconnectSummary['total_disconnects'] }} kejadian
+            </span>
+        </div>
+
+        <div class="divide-y divide-gray-50">
+            @forelse($topDisconnectCustomers as $item)
+            <div class="px-6 py-4 flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                <div class="min-w-0">
+                    @if($item['customer'])
+                        <a href="{{ route('customers.show', $item['customer']->id) }}" class="font-semibold text-blue-600 hover:underline truncate block">
+                            {{ $item['customer']->name }}
+                        </a>
+                    @else
+                        <p class="font-semibold text-gray-900 truncate">{{ $item['pppoe_user'] ?? 'PPPoE tidak dikenal' }}</p>
+                    @endif
+                    <p class="text-xs text-gray-400 font-mono truncate">{{ $item['pppoe_user'] ?? '-' }}</p>
+                </div>
+                <div class="text-right shrink-0">
+                    <p class="text-xl font-bold text-gray-900">{{ $item['disconnect_count'] }}x</p>
+                    <p class="text-xs text-gray-400">Terakhir {{ $item['last_seen']->diffForHumans() }}</p>
+                </div>
+            </div>
+            @empty
+            <div class="px-6 py-10 text-center">
+                <p class="text-sm font-medium text-gray-700">Belum ada disconnect terbaru</p>
+                <p class="text-xs text-gray-400 mt-1">Data akan muncul saat webhook mencatat pelanggan terputus.</p>
+            </div>
+            @endforelse
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2M12 22a10 10 0 110-20 10 10 0 010 20z"/>
+            </svg>
+        </div>
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Rata-rata Waktu Kejadian</p>
+        <p class="text-3xl font-bold text-gray-900 mt-2">{{ $disconnectSummary['avg_duration'] ?? '-' }}</p>
+        <p class="text-sm text-gray-500 mt-2">
+            Rata-rata durasi dari pelanggan terputus sampai terhubung kembali dalam {{ $disconnectSummary['window_hours'] }} jam terakhir.
+        </p>
+
+        <div class="grid grid-cols-2 gap-3 mt-5">
+            <div class="rounded-xl bg-gray-50 p-3">
+                <p class="text-lg font-bold text-gray-900">{{ $disconnectSummary['affected_customers'] }}</p>
+                <p class="text-xs text-gray-500">Pelanggan terdampak</p>
+            </div>
+            <div class="rounded-xl bg-gray-50 p-3">
+                <p class="text-lg font-bold text-gray-900">{{ $disconnectSummary['paired_events'] }}</p>
+                <p class="text-xs text-gray-500">Event lengkap</p>
+            </div>
+        </div>
+
+        @unless($disconnectSummary['avg_duration'])
+        <p class="text-xs text-amber-700 bg-amber-50 rounded-xl px-3 py-2 mt-4">
+            Butuh pasangan event terputus dan terhubung untuk menghitung rata-rata waktu.
+        </p>
+        @endunless
+    </div>
+</div>
+
 <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
     <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
         <h3 class="font-bold text-gray-900">Riwayat Koneksi PPPoE</h3>
