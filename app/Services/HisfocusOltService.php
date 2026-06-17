@@ -26,6 +26,10 @@ class HisfocusOltService
             ->accept('text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8')
             ->withOptions(['cookies' => true]);
 
+        if (filled($this->username())) {
+            $session->withBasicAuth($this->username(), $this->password());
+        }
+
         $this->login($session);
 
         foreach ($this->onuListUrls() as $url) {
@@ -50,7 +54,7 @@ class HisfocusOltService
                     'success' => true,
                     'source' => 'olt',
                     'device' => [
-                        'id' => $match['onu_id'] ?? null,
+                        'id' => $this->value($match, ['id', 'onu_id', 'onuid']),
                         'serial_number' => $customer->ont_serial_number,
                         'product_class' => null,
                         'ip' => null,
@@ -110,7 +114,7 @@ class HisfocusOltService
     private function findCustomerRow(string $html, Customer $customer): ?array
     {
         foreach ($this->parseTables($html) as $row) {
-            $onuId = $this->value($row, ['onu_id', 'onuid']);
+            $onuId = $this->value($row, ['id', 'onu_id', 'onuid']);
             $mac = $this->value($row, ['mac_address', 'macaddress']);
 
             if (filled($customer->onu_id) && $this->sameText($customer->onu_id, $onuId)) {
@@ -158,7 +162,7 @@ class HisfocusOltService
 
             $row = array_combine($headers, $cells);
 
-            if ($row && ($this->value($row, ['onuid', 'onu_id']) || $this->value($row, ['macaddress', 'mac_address']))) {
+            if ($row && ($this->value($row, ['id', 'onuid', 'onu_id']) || $this->value($row, ['macaddress', 'mac_address']))) {
                 $rows[] = $row;
             }
         }
@@ -170,7 +174,7 @@ class HisfocusOltService
     {
         $keys = array_map(fn (string $cell) => $this->key($cell), $cells);
 
-        return in_array('onuid', $keys, true) || in_array('macaddress', $keys, true);
+        return in_array('id', $keys, true) || in_array('onuid', $keys, true) || in_array('macaddress', $keys, true);
     }
 
     private function key(string $value): string
@@ -222,11 +226,21 @@ class HisfocusOltService
 
     private function onuListUrls(): array
     {
-        return collect(preg_split('/\r\n|\r|\n/', (string) Setting::get('hisfocus_olt_onu_list_urls', '')))
+        return collect(preg_split('/\r\n|\r|\n/', (string) Setting::get('hisfocus_olt_onu_list_urls', '/onuAllPonOnuList.asp')))
             ->map(fn (string $url) => trim($url))
             ->filter()
             ->values()
             ->all();
+    }
+
+    private function username(): string
+    {
+        return (string) Setting::get('hisfocus_olt_username', '');
+    }
+
+    private function password(): string
+    {
+        return (string) Setting::get('hisfocus_olt_password', '');
     }
 
     private function timeout(): int

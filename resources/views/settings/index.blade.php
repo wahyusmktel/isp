@@ -298,8 +298,8 @@ $s = fn(string $key, string $default = '') => $settings[$key] ?? $default;
                         </div>
                         <div class="lg:col-span-3">
                             <label class="block text-xs font-semibold text-gray-600 mb-1.5">URL ONU List</label>
-                            <textarea name="hisfocus_olt_onu_list_urls" rows="3" placeholder="Satu URL per baris, contoh: /path/pon-0-1-1.asp"
-                                      class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white resize-none font-mono">{{ $s('hisfocus_olt_onu_list_urls') }}</textarea>
+                            <textarea name="hisfocus_olt_onu_list_urls" rows="3" placeholder="Satu URL per baris, contoh: /onuAllPonOnuList.asp"
+                                      class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all bg-gray-50 focus:bg-white resize-none font-mono">{{ $s('hisfocus_olt_onu_list_urls', '/onuAllPonOnuList.asp') }}</textarea>
                             <p class="text-[10px] text-gray-400 mt-1">Ambil URL dari DevTools Network saat membuka tabel PON 0/1/1 dan 0/1/2.</p>
                         </div>
                     </div>
