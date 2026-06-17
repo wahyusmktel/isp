@@ -292,7 +292,7 @@ document.addEventListener("DOMContentLoaded", function() {
         statusEl.textContent = 'Mengambil data dari GenieACS...';
 
         try {
-            const response = await fetch('{{ route('customers.ont_info', $customer->id) }}', {
+            const response = await fetch('/customers/{{ $customer->id }}/ont-info', {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'Accept': 'application/json',
@@ -345,7 +345,7 @@ document.addEventListener("DOMContentLoaded", function() {
         wifiMessage.classList.add('hidden');
 
         try {
-            const response = await fetch('{{ route('customers.wifi.update', $customer->id) }}', {
+            const response = await fetch('/customers/{{ $customer->id }}/wifi', {
                 method: 'POST',
                 body: new FormData(wifiForm),
                 headers: {
