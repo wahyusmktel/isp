@@ -391,6 +391,25 @@ class NewsSeeder extends Seeder
                 'meta_description' => 'Kenali edge computing untuk ISP lokal: server lebih dekat, latency rendah, peering, cache konten, gaming, streaming, dan bisnis.',
                 'published_at' => now()->setTime(17, 0),
             ],
+            [
+                'title' => 'Pengumuman: Tim-7 Net Akan Menerapkan Sistem Isolir untuk Seluruh Pelanggan',
+                'excerpt' => 'Tim-7 Net akan menerapkan sistem isolir layanan internet untuk seluruh pelanggan sebagai bagian dari peningkatan ketertiban administrasi, stabilitas layanan, dan transparansi pembayaran.',
+                'body' => $this->article([
+                    'Kepada seluruh pelanggan Tim-7 Net, kami informasikan bahwa Tim-7 Net akan menerapkan sistem isolir layanan internet secara bertahap untuk seluruh pelanggan. Kebijakan ini dilakukan sebagai bagian dari peningkatan tata kelola layanan, ketertiban administrasi pembayaran, dan menjaga kualitas jaringan agar tetap stabil bagi semua pengguna.',
+                    'Sistem isolir adalah pembatasan akses layanan internet sementara kepada pelanggan yang belum menyelesaikan kewajiban pembayaran sesuai jatuh tempo yang berlaku. Saat layanan berada dalam status isolir, koneksi internet pelanggan akan dibatasi atau tidak dapat digunakan sampai tagihan diselesaikan.',
+                    'Penerapan sistem isolir bukan bertujuan mempersulit pelanggan, melainkan memastikan layanan berjalan lebih tertib, adil, dan berkelanjutan. Dengan pembayaran yang lebih teratur, Tim-7 Net dapat menjaga operasional jaringan, melakukan perawatan perangkat, meningkatkan kapasitas, dan memberikan dukungan teknis yang lebih baik.',
+                    'Pelanggan diimbau untuk selalu memperhatikan tanggal jatuh tempo tagihan. Informasi tagihan dapat dicek melalui kanal resmi Tim-7 Net atau menghubungi admin layanan pelanggan. Jika pembayaran sudah dilakukan tetapi layanan masih berstatus isolir, pelanggan dapat mengirimkan bukti pembayaran agar proses pengecekan dan aktivasi ulang dapat dilakukan lebih cepat.',
+                    'Setelah pembayaran dikonfirmasi, layanan internet akan dibuka kembali sesuai prosedur sistem. Pada kondisi normal, proses pembukaan isolir dapat berjalan otomatis atau diproses oleh admin setelah data pembayaran tervalidasi. Pastikan nama pelanggan, nomor layanan, dan bukti pembayaran dikirim dengan jelas untuk menghindari keterlambatan verifikasi.',
+                    'Tim-7 Net juga mengimbau pelanggan untuk menggunakan metode pembayaran resmi dan menghindari pembayaran ke pihak yang tidak berwenang. Simpan bukti pembayaran sampai status tagihan dinyatakan lunas. Langkah ini penting agar riwayat administrasi pelanggan tetap aman dan mudah ditelusuri.',
+                    'Bagi pelanggan yang memiliki kendala pembayaran, pindah lokasi, perubahan paket, atau pertanyaan terkait status layanan, silakan menghubungi tim admin Tim-7 Net melalui kontak resmi. Kami akan membantu memberikan informasi sesuai data pelanggan dan ketentuan layanan yang berlaku.',
+                    'Kami mengucapkan terima kasih atas pengertian dan kerja sama seluruh pelanggan. Dengan penerapan sistem isolir yang tertib dan transparan, Tim-7 Net berharap kualitas layanan internet dapat terus meningkat, jaringan lebih stabil, dan pengalaman pelanggan menjadi lebih baik.',
+                ]),
+                'cover_image' => 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1200&q=80',
+                'category' => 'pengumuman',
+                'meta_title' => 'Pengumuman Sistem Isolir Pelanggan Tim-7 Net',
+                'meta_description' => 'Tim-7 Net akan menerapkan sistem isolir untuk seluruh pelanggan demi ketertiban pembayaran, transparansi administrasi, dan kualitas layanan.',
+                'published_at' => now()->setTime(18, 0),
+            ],
         ];
 
         foreach ($articles as $article) {
