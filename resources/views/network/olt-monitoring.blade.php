@@ -11,10 +11,41 @@ $statusClass = function ($status) {
     }
     return 'bg-red-50 text-red-700';
 };
-$rxClass = function ($rx) {
-    if (!preg_match('/-?\d+(?:\.\d+)?/', (string) $rx, $match)) return 'text-gray-700';
+$rxBadge = function ($rx) {
+    if (!preg_match('/-?\d+(?:\.\d+)?/', (string) $rx, $match)) {
+        return [
+            'label' => 'Tidak terbaca',
+            'class' => 'bg-gray-100 text-gray-600 border-gray-200',
+        ];
+    }
+
     $value = (float) $match[0];
-    return ($value < -27 || $value > -8) ? 'text-red-600 font-bold' : 'text-gray-800 font-semibold';
+
+    if ($value >= -22 && $value <= -15) {
+        return [
+            'label' => 'Excellent',
+            'class' => 'bg-green-700 text-white border-green-700',
+        ];
+    }
+
+    if ($value >= -25 && $value <= -23) {
+        return [
+            'label' => 'Good',
+            'class' => 'bg-green-100 text-green-800 border-green-200',
+        ];
+    }
+
+    if ($value <= -26) {
+        return [
+            'label' => 'Critical',
+            'class' => 'bg-red-100 text-red-700 border-red-200',
+        ];
+    }
+
+    return [
+        'label' => 'Perlu Cek',
+        'class' => 'bg-amber-100 text-amber-800 border-amber-200',
+    ];
 };
 @endphp
 
@@ -157,7 +188,11 @@ $rxClass = function ($rx) {
                             <p class="text-xs text-gray-400 mt-1">RTT: {{ $fmt($client['rtt'] ?? null) }}</p>
                         </td>
                         <td class="px-4 py-4">
-                            <p class="text-xs">Rx: <span class="{{ $rxClass($client['rx_power'] ?? null) }}">{{ $fmt($client['rx_power'] ?? null) }}</span></p>
+                            @php $rx = $rxBadge($client['rx_power'] ?? null); @endphp
+                            <div class="inline-flex items-center gap-2 rounded-xl border px-2.5 py-1.5 {{ $rx['class'] }}">
+                                <span class="text-[10px] font-bold uppercase tracking-wide">{{ $rx['label'] }}</span>
+                                <span class="text-xs font-mono font-bold">{{ $fmt($client['rx_power'] ?? null) }}</span>
+                            </div>
                             <p class="text-xs text-gray-600">Tx: <span class="font-semibold">{{ $fmt($client['tx_power'] ?? null) }}</span></p>
                             <p class="text-xs text-gray-400">Temp: {{ $fmt($client['temperature'] ?? null) }}</p>
                         </td>
