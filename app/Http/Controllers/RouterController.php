@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Odp;
+use App\Models\Odc;
+use App\Models\Customer;
 use App\Models\Router;
 use App\Services\MikrotikService;
 use Illuminate\Http\JsonResponse;
@@ -13,7 +15,13 @@ class RouterController extends Controller
     public function index()
     {
         $routers = Router::withCount('odps')->orderByDesc('created_at')->get();
-        $odps    = Odp::with('router:id,name')->orderBy('name')->get();
+        $odps    = Odp::with(['router:id,name', 'odc:id,name'])->withCount('customers')->orderBy('name')->get();
+        $odcs    = Odc::withCount('odps')->orderBy('name')->get();
+        $customers = Customer::with(['package:id,name', 'odp:id,name'])
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->orderBy('name')
+            ->get();
 
         $routerStats = [
             'total'   => $routers->count(),
@@ -26,7 +34,12 @@ class RouterController extends Controller
             'cap_total' => $odps->sum('capacity'),
         ];
 
-        return view('network.index', compact('routers', 'odps', 'routerStats', 'odpStats'));
+        $odcStats = [
+            'total' => $odcs->count(),
+            'cap_total' => $odcs->sum('capacity'),
+        ];
+
+        return view('network.index', compact('routers', 'odps', 'odcs', 'customers', 'routerStats', 'odpStats', 'odcStats'));
     }
 
     public function store(Request $request): JsonResponse

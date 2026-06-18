@@ -9,11 +9,11 @@ class Customer extends Model
 {
     protected $fillable = [
         'customer_number', 'name', 'email', 'phone', 'address',
-        'package_id', 'ip_address', 'pppoe_user', 'onu_id', 'mac_ont',
+        'package_id', 'odp_id', 'ip_address', 'pppoe_user', 'onu_id', 'mac_ont',
         'acs_device_id', 'ont_serial_number', 'wifi_ssid',
         'status', 'is_isolated', 'isolated_at', 'isolation_reason', 'isolation_released_at',
         'join_date', 'billing_date', 'notes',
-        'latitude', 'longitude',
+        'latitude', 'longitude', 'cable_distance_meters', 'odp_mapped_at',
     ];
 
     protected $casts = [
@@ -24,11 +24,19 @@ class Customer extends Model
         'billing_date' => 'integer',
         'latitude' => 'float',
         'longitude' => 'float',
+        'odp_id' => 'integer',
+        'cable_distance_meters' => 'integer',
+        'odp_mapped_at' => 'datetime',
     ];
 
     public function package(): BelongsTo
     {
         return $this->belongsTo(Package::class);
+    }
+
+    public function odp(): BelongsTo
+    {
+        return $this->belongsTo(Odp::class);
     }
 
     public function getStatusLabelAttribute(): string
@@ -50,6 +58,8 @@ class Customer extends Model
             'phone' => $this->phone,
             'address' => $this->address,
             'package_id' => $this->package_id,
+            'odp_id' => $this->odp_id,
+            'odp_name' => $this->odp?->name,
             'package_name' => $this->package?->name ?? '—',
             'package_cat' => $this->package?->category ?? 'home',
             'ip_address' => $this->ip_address ?? '',
@@ -69,6 +79,8 @@ class Customer extends Model
             'notes' => $this->notes ?? '',
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
+            'cable_distance_meters' => $this->cable_distance_meters,
+            'odp_mapped_at' => $this->odp_mapped_at?->format('Y-m-d H:i:s') ?? '',
         ];
     }
 }

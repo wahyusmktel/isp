@@ -2,6 +2,14 @@
 @section('title', 'Router & ODP')
 @section('page-title', 'Router & ODP')
 
+@push('styles')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+    .network-map { height: 280px; min-height: 280px; border-radius: 1rem; overflow: hidden; }
+    .mapping-map { height: 420px; min-height: 420px; border-radius: 1rem; overflow: hidden; }
+</style>
+@endpush
+
 @section('content')
 
 {{-- ===== Header ===== --}}
@@ -11,6 +19,13 @@
         <p class="text-sm text-gray-400 mt-0.5">Kelola infrastruktur jaringan Mikrotik dan titik distribusi optik</p>
     </div>
     <div class="flex items-center gap-2 self-start sm:self-auto">
+        <button onclick="openOdcModal('create')"
+                class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
+            </svg>
+            Tambah ODC
+        </button>
         <button onclick="openOdpModal('create')"
                 class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -47,6 +62,14 @@
         </svg>
         ODP
         <span id="tab-odp-count" class="ml-1.5 bg-gray-200 text-gray-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold">{{ $odpStats['total'] }}</span>
+    </button>
+    <button id="tab-odc" onclick="switchTab('odc')"
+            class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold transition-colors text-gray-500 hover:text-gray-700 hover:bg-gray-50">
+        <svg class="w-4 h-4 inline -mt-0.5 mr-1.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M7 7v10m10-10v10M5 17h14M9 11h6"/>
+        </svg>
+        ODC
+        <span id="tab-odc-count" class="ml-1.5 bg-gray-200 text-gray-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold">{{ $odcStats['total'] }}</span>
     </button>
 </div>
 
@@ -282,7 +305,8 @@
                     <tr class="border-b border-gray-100">
                         <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-3">Nama ODP</th>
                         <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Lokasi</th>
-                        <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden md:table-cell">Router</th>
+                        <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden md:table-cell">Router / ODC</th>
+                        <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Koordinat</th>
                         <th class="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Kapasitas</th>
                         <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Catatan</th>
                         <th class="text-right text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-3">Aksi</th>
@@ -292,7 +316,7 @@
                 @forelse($odps as $odp)
                 <tr class="odp-row border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
                     data-id="{{ $odp->id }}"
-                    data-search="{{ strtolower($odp->name . ' ' . $odp->location . ' ' . ($odp->router?->name ?? '')) }}">
+                    data-search="{{ strtolower($odp->name . ' ' . $odp->location . ' ' . ($odp->router?->name ?? '') . ' ' . ($odp->odc?->name ?? '')) }}">
                     <td class="px-5 py-3.5">
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
@@ -316,14 +340,35 @@
                         @else
                         <span class="text-xs text-gray-400">—</span>
                         @endif
+                        @if($odp->odc)
+                        <span class="mt-1 inline-flex items-center gap-1 text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-lg font-medium">
+                            ODC: {{ $odp->odc->name }}
+                        </span>
+                        @else
+                        <p class="text-xs text-gray-400 mt-1">ODC belum dipilih</p>
+                        @endif
+                    </td>
+                    <td class="px-4 py-3.5 hidden lg:table-cell">
+                        @if($odp->latitude && $odp->longitude)
+                        <p class="font-mono text-xs text-gray-700">{{ number_format($odp->latitude, 6) }}, {{ number_format($odp->longitude, 6) }}</p>
+                        @else
+                        <span class="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-lg font-semibold">Belum diset</span>
+                        @endif
                     </td>
                     <td class="px-4 py-3.5 text-center">
                         <span class="font-bold text-gray-700">{{ $odp->capacity }}</span>
                         <span class="text-xs text-gray-400"> port</span>
+                        <p class="text-[10px] text-gray-400">{{ $odp->customers_count ?? 0 }} pelanggan</p>
                     </td>
                     <td class="px-4 py-3.5 hidden lg:table-cell text-sm text-gray-500 max-w-[200px] truncate">{{ $odp->notes ?? '—' }}</td>
                     <td class="px-5 py-3.5">
                         <div class="flex items-center justify-end gap-1">
+                            <button onclick="openOdpMappingModal({{ $odp->id }})" title="Mapping Pelanggan"
+                                    class="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-50 hover:text-emerald-700 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3zM9 3v15m6-12v15"/>
+                                </svg>
+                            </button>
                             <button onclick="openOdpModal('edit', {{ $odp->id }})" title="Edit"
                                     class="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -341,7 +386,7 @@
                 </tr>
                 @empty
                 <tr id="odp-empty">
-                    <td colspan="6" class="px-5 py-16 text-center">
+                    <td colspan="7" class="px-5 py-16 text-center">
                         <div class="flex flex-col items-center gap-3">
                             <div class="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
                                 <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -370,6 +415,104 @@
     </div>
 
 </div>{{-- end #panel-odp --}}
+
+{{-- ============================================================ --}}
+{{--                        ODC TAB                                --}}
+{{-- ============================================================ --}}
+<div id="panel-odc" class="hidden">
+    <div class="grid grid-cols-2 gap-4 mb-5">
+        <div class="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M7 7v10m10-10v10M5 17h14M9 11h6"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-gray-900" id="odc-stat-total">{{ $odcStats['total'] }}</p>
+                <p class="text-xs text-gray-500">Total ODC</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl bg-cyan-50 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 12h16M8 8h8M8 16h8"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-gray-900" id="odc-stat-cap">{{ $odcStats['cap_total'] }}</p>
+                <p class="text-xs text-gray-500">Total Kapasitas</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-100 px-4 py-3 mb-4 flex items-center gap-3">
+        <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-full sm:w-72">
+            <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input type="text" id="odc-search" placeholder="Cari nama atau lokasi ODC..."
+                   class="bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none flex-1"
+                   oninput="filterOdcs()">
+        </div>
+        <button onclick="openOdcModal('create')"
+                class="ml-auto inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+            Tambah ODC
+        </button>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-100">
+                        <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-3">Nama ODC</th>
+                        <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Lokasi</th>
+                        <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Koordinat</th>
+                        <th class="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Kapasitas</th>
+                        <th class="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">ODP</th>
+                        <th class="text-right text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-3">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="odc-tbody">
+                @forelse($odcs as $odc)
+                    <tr class="odc-row border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                        data-id="{{ $odc->id }}"
+                        data-search="{{ strtolower($odc->name . ' ' . $odc->location) }}">
+                        <td class="px-5 py-3.5 font-semibold text-gray-900">{{ $odc->name }}</td>
+                        <td class="px-4 py-3.5 text-gray-600">{{ $odc->location ?? 'Belum diisi' }}</td>
+                        <td class="px-4 py-3.5 hidden lg:table-cell">
+                            @if($odc->latitude && $odc->longitude)
+                            <p class="font-mono text-xs text-gray-700">{{ number_format($odc->latitude, 6) }}, {{ number_format($odc->longitude, 6) }}</p>
+                            @else
+                            <span class="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-lg font-semibold">Belum diset</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3.5 text-center font-bold text-gray-700">{{ $odc->capacity }}</td>
+                        <td class="px-4 py-3.5 text-center font-bold text-gray-700">{{ $odc->odps_count }}</td>
+                        <td class="px-5 py-3.5">
+                            <div class="flex items-center justify-end gap-1">
+                                <button onclick="openOdcModal('edit', {{ $odc->id }})" title="Edit"
+                                        class="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                </button>
+                                <button onclick="deleteOdc({{ $odc->id }}, '{{ addslashes($odc->name) }}')" title="Hapus"
+                                        class="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" class="px-5 py-16 text-center text-gray-400">Belum ada ODC</td>
+                    </tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>{{-- end #panel-odc --}}
 
 
 {{-- ============================================================ --}}
@@ -483,7 +626,7 @@
 <div id="odp-modal" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeOdpModal()"></div>
     <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                 <h3 class="font-bold text-gray-900" id="odp-modal-title">Tambah ODP</h3>
                 <button onclick="closeOdpModal()" class="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
@@ -507,13 +650,22 @@
                                class="inp w-full">
                         <p class="err hidden text-xs text-red-500 mt-1" id="err-of-location"></p>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="lbl">Router</label>
                             <select id="of-router" name="router_id" class="inp w-full">
                                 <option value="">— Pilih Router —</option>
                                 @foreach($routers as $r)
                                 <option value="{{ $r->id }}">{{ $r->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="lbl">ODC</label>
+                            <select id="of-odc" name="odc_id" class="inp w-full">
+                                <option value="">Pilih ODC</option>
+                                @foreach($odcs as $odc)
+                                <option value="{{ $odc->id }}">{{ $odc->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -525,6 +677,23 @@
                                 @endforeach
                             </select>
                         </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="lbl">Latitude ODP</label>
+                            <input type="number" step="any" id="of-latitude" name="latitude" class="inp w-full" placeholder="-6.200000">
+                            <p class="err hidden text-xs text-red-500 mt-1" id="err-of-latitude"></p>
+                        </div>
+                        <div>
+                            <label class="lbl">Longitude ODP</label>
+                            <input type="number" step="any" id="of-longitude" name="longitude" class="inp w-full" placeholder="106.816666">
+                            <p class="err hidden text-xs text-red-500 mt-1" id="err-of-longitude"></p>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="lbl">Titik Lokasi ODP</label>
+                        <div id="odp-location-map" class="network-map border border-gray-200"></div>
+                        <p class="text-xs text-gray-400 mt-2">Klik peta untuk menentukan titik ODP.</p>
                     </div>
                     <div>
                         <label class="lbl">Catatan</label>
@@ -547,6 +716,116 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+{{-- ============================================================ --}}
+{{--                    MODAL: ODC                                 --}}
+{{-- ============================================================ --}}
+<div id="odc-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeOdcModal()"></div>
+    <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <h3 class="font-bold text-gray-900" id="odc-modal-title">Tambah ODC</h3>
+                <button onclick="closeOdcModal()" class="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form id="odc-form" onsubmit="submitOdc(event)">
+                <input type="hidden" id="oc-id">
+                <div class="overflow-y-auto px-6 py-5 space-y-4 flex-1">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="lbl">Nama ODC <span class="text-red-500">*</span></label>
+                            <input type="text" id="oc-name" class="inp w-full" placeholder="cth. ODC-UTAMA-01">
+                            <p class="err hidden text-xs text-red-500 mt-1" id="err-oc-name"></p>
+                        </div>
+                        <div>
+                            <label class="lbl">Kapasitas</label>
+                            <input type="number" min="0" id="oc-capacity" class="inp w-full" value="0">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="lbl">Lokasi</label>
+                        <input type="text" id="oc-location" class="inp w-full" placeholder="Alamat atau patokan ODC">
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="lbl">Latitude ODC</label>
+                            <input type="number" step="any" id="oc-latitude" class="inp w-full" placeholder="-6.200000">
+                            <p class="err hidden text-xs text-red-500 mt-1" id="err-oc-latitude"></p>
+                        </div>
+                        <div>
+                            <label class="lbl">Longitude ODC</label>
+                            <input type="number" step="any" id="oc-longitude" class="inp w-full" placeholder="106.816666">
+                            <p class="err hidden text-xs text-red-500 mt-1" id="err-oc-longitude"></p>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="lbl">Titik Lokasi ODC</label>
+                        <div id="odc-location-map" class="network-map border border-gray-200"></div>
+                    </div>
+                    <div>
+                        <label class="lbl">Catatan</label>
+                        <textarea id="oc-notes" rows="2" class="inp w-full resize-none" placeholder="Catatan ODC..."></textarea>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100">
+                    <button type="button" onclick="closeOdcModal()" class="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">Batal</button>
+                    <button type="submit" id="odc-save-btn" class="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-colors">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- ============================================================ --}}
+{{--                    MODAL: MAPPING ODP                         --}}
+{{-- ============================================================ --}}
+<div id="odp-mapping-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeOdpMappingModal()"></div>
+    <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <div>
+                    <h3 class="font-bold text-gray-900" id="mapping-modal-title">Mapping Pelanggan ke ODP</h3>
+                    <p class="text-xs text-gray-400" id="mapping-modal-sub">Pilih pelanggan untuk melihat garis kabel dan estimasi jarak.</p>
+                </div>
+                <button onclick="closeOdpMappingModal()" class="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-0 overflow-y-auto">
+                <div class="p-6 border-r border-gray-100 space-y-4">
+                    <input type="hidden" id="mapping-odp-id">
+                    <div>
+                        <label class="lbl">Cari Pelanggan</label>
+                        <input type="text" id="mapping-customer-search" class="inp w-full" placeholder="Cari nama, nomor, telepon..." oninput="renderMappingCustomerOptions()">
+                    </div>
+                    <div>
+                        <label class="lbl">Pelanggan dengan Koordinat</label>
+                        <select id="mapping-customer" class="inp w-full" size="9" onchange="previewOdpCustomerLine()"></select>
+                    </div>
+                    <div class="rounded-2xl bg-gray-50 border border-gray-100 p-4">
+                        <p class="text-xs text-gray-400">Jarak kabel</p>
+                        <p class="text-2xl font-bold text-gray-900" id="mapping-distance">-</p>
+                        <p class="text-xs text-gray-500 mt-1" id="mapping-selected-info">Belum ada pelanggan dipilih.</p>
+                    </div>
+                    <button onclick="saveOdpCustomerMapping()" id="mapping-save-btn"
+                            class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
+                        Simpan Mapping
+                    </button>
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Pelanggan di ODP ini</p>
+                        <div id="mapping-current-list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div id="odp-mapping-map" class="mapping-map border border-gray-200"></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -672,17 +951,23 @@
 </div>
 
 {{-- ─── Data for JS ─── --}}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const ROUTERS = @json($routers->map(fn($r) => $r->toJsonData()));
 const ODPS    = @json($odps->map(fn($o) => $o->toJsonData()));
+const ODCS    = @json($odcs->map(fn($o) => $o->toJsonData()));
+const CUSTOMERS = @json($customers->map(fn($c) => $c->toJsonData()));
 const CSRF    = '{{ csrf_token() }}';
+const DEFAULT_MAP_CENTER = [-6.2, 106.816666];
+let odpLocationMap, odpLocationMarker, odcLocationMap, odcLocationMarker, mappingMap, mappingMarkers = [], mappingLine = null;
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────
 function switchTab(tab) {
     document.getElementById('panel-router').classList.toggle('hidden', tab !== 'router');
     document.getElementById('panel-odp').classList.toggle('hidden', tab !== 'odp');
+    document.getElementById('panel-odc').classList.toggle('hidden', tab !== 'odc');
 
-    ['router','odp'].forEach(t => {
+    ['router','odp','odc'].forEach(t => {
         const btn = document.getElementById('tab-' + t);
         if (t === tab) {
             btn.className = 'tab-btn px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-gray-900 text-white';
@@ -704,6 +989,12 @@ function filterRouters() {
 function filterOdps() {
     const q = document.getElementById('odp-search').value.toLowerCase();
     document.querySelectorAll('.odp-row').forEach(r => {
+        r.style.display = r.dataset.search.includes(q) ? '' : 'none';
+    });
+}
+function filterOdcs() {
+    const q = document.getElementById('odc-search').value.toLowerCase();
+    document.querySelectorAll('.odc-row').forEach(r => {
         r.style.display = r.dataset.search.includes(q) ? '' : 'none';
     });
 }
@@ -731,9 +1022,61 @@ function clearErrors() {
 }
 function showErrors(errors) {
     Object.entries(errors).forEach(([field, msgs]) => {
-        const el = document.getElementById('err-rf-' + field) || document.getElementById('err-of-' + field);
+        const el = document.getElementById('err-rf-' + field) || document.getElementById('err-of-' + field) || document.getElementById('err-oc-' + field);
         if (el) { el.textContent = msgs[0]; el.classList.remove('hidden'); }
     });
+}
+
+function hasCoords(item) {
+    return item && item.latitude !== null && item.latitude !== undefined && item.longitude !== null && item.longitude !== undefined;
+}
+function toLatLng(item) {
+    return [parseFloat(item.latitude), parseFloat(item.longitude)];
+}
+function setMarker(map, marker, lat, lng, label = '') {
+    if (marker) marker.setLatLng([lat, lng]);
+    else marker = L.marker([lat, lng]).addTo(map);
+    if (label) marker.bindPopup(label);
+    map.setView([lat, lng], 17);
+    return marker;
+}
+function syncMapInputs(prefix, lat, lng) {
+    document.getElementById(`${prefix}-latitude`).value = Number(lat).toFixed(7);
+    document.getElementById(`${prefix}-longitude`).value = Number(lng).toFixed(7);
+}
+function initPickerMap(kind, lat = null, lng = null) {
+    const isOdp = kind === 'odp';
+    const elId = isOdp ? 'odp-location-map' : 'odc-location-map';
+    const prefix = isOdp ? 'of' : 'oc';
+    const start = lat && lng ? [parseFloat(lat), parseFloat(lng)] : DEFAULT_MAP_CENTER;
+    let map = isOdp ? odpLocationMap : odcLocationMap;
+    if (!map) {
+        map = L.map(elId).setView(start, lat && lng ? 17 : 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+        map.on('click', e => {
+            syncMapInputs(prefix, e.latlng.lat, e.latlng.lng);
+            if (isOdp) odpLocationMarker = setMarker(map, odpLocationMarker, e.latlng.lat, e.latlng.lng);
+            else odcLocationMarker = setMarker(map, odcLocationMarker, e.latlng.lat, e.latlng.lng);
+        });
+        if (isOdp) odpLocationMap = map; else odcLocationMap = map;
+    }
+    setTimeout(() => {
+        map.invalidateSize();
+        map.setView(start, lat && lng ? 17 : 12);
+        if (lat && lng) {
+            if (isOdp) odpLocationMarker = setMarker(map, odpLocationMarker, lat, lng);
+            else odcLocationMarker = setMarker(map, odcLocationMarker, lat, lng);
+        }
+    }, 120);
+}
+function distanceMeters(a, b) {
+    const R = 6371000;
+    const dLat = (b[0] - a[0]) * Math.PI / 180;
+    const dLng = (b[1] - a[1]) * Math.PI / 180;
+    const lat1 = a[0] * Math.PI / 180;
+    const lat2 = b[0] * Math.PI / 180;
+    const x = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    return Math.round(R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x)));
 }
 
 // ─── Router Modal ─────────────────────────────────────────────────────────
@@ -820,6 +1163,9 @@ function openOdpModal(mode, id = null) {
     document.getElementById('of-name').value = '';
     document.getElementById('of-location').value = '';
     document.getElementById('of-router').value = '';
+    document.getElementById('of-odc').value = '';
+    document.getElementById('of-latitude').value = '';
+    document.getElementById('of-longitude').value = '';
     document.getElementById('of-capacity').value = '8';
     document.getElementById('of-notes').value = '';
 
@@ -832,6 +1178,9 @@ function openOdpModal(mode, id = null) {
         document.getElementById('of-name').value     = o.name;
         document.getElementById('of-location').value = o.location;
         document.getElementById('of-router').value   = o.router_id ?? '';
+        document.getElementById('of-odc').value      = o.odc_id ?? '';
+        document.getElementById('of-latitude').value = o.latitude ?? '';
+        document.getElementById('of-longitude').value = o.longitude ?? '';
         document.getElementById('of-capacity').value = o.capacity;
         document.getElementById('of-notes').value    = o.notes ?? '';
     } else {
@@ -839,6 +1188,7 @@ function openOdpModal(mode, id = null) {
         document.getElementById('odp-save-label').textContent  = 'Simpan';
     }
     document.getElementById('odp-modal').classList.remove('hidden');
+    initPickerMap('odp', document.getElementById('of-latitude').value, document.getElementById('of-longitude').value);
 }
 function closeOdpModal() {
     document.getElementById('odp-modal').classList.add('hidden');
@@ -859,6 +1209,9 @@ async function submitOdp(e) {
         name:      document.getElementById('of-name').value,
         location:  document.getElementById('of-location').value,
         router_id: document.getElementById('of-router').value || null,
+        odc_id:    document.getElementById('of-odc').value || null,
+        latitude:  document.getElementById('of-latitude').value || null,
+        longitude: document.getElementById('of-longitude').value || null,
         capacity:  parseInt(document.getElementById('of-capacity').value),
         notes:     document.getElementById('of-notes').value || null,
     };
@@ -882,6 +1235,167 @@ async function submitOdp(e) {
 }
 
 // ─── Test Connection ──────────────────────────────────────────────────────
+// ODC Modal
+function openOdcModal(mode, id = null) {
+    clearErrors();
+    document.getElementById('oc-id').value = '';
+    document.getElementById('oc-name').value = '';
+    document.getElementById('oc-location').value = '';
+    document.getElementById('oc-latitude').value = '';
+    document.getElementById('oc-longitude').value = '';
+    document.getElementById('oc-capacity').value = '0';
+    document.getElementById('oc-notes').value = '';
+    if (mode === 'edit' && id) {
+        const o = ODCS.find(x => x.id == id);
+        if (!o) return;
+        document.getElementById('odc-modal-title').textContent = 'Edit ODC';
+        document.getElementById('oc-id').value = o.id;
+        document.getElementById('oc-name').value = o.name;
+        document.getElementById('oc-location').value = o.location ?? '';
+        document.getElementById('oc-latitude').value = o.latitude ?? '';
+        document.getElementById('oc-longitude').value = o.longitude ?? '';
+        document.getElementById('oc-capacity').value = o.capacity ?? 0;
+        document.getElementById('oc-notes').value = o.notes ?? '';
+    } else {
+        document.getElementById('odc-modal-title').textContent = 'Tambah ODC';
+    }
+    document.getElementById('odc-modal').classList.remove('hidden');
+    initPickerMap('odc', document.getElementById('oc-latitude').value, document.getElementById('oc-longitude').value);
+}
+function closeOdcModal() {
+    document.getElementById('odc-modal').classList.add('hidden');
+}
+async function submitOdc(e) {
+    e.preventDefault();
+    clearErrors();
+    const id = document.getElementById('oc-id').value;
+    const btn = document.getElementById('odc-save-btn');
+    btn.disabled = true;
+    const body = {
+        name: document.getElementById('oc-name').value,
+        location: document.getElementById('oc-location').value || null,
+        latitude: document.getElementById('oc-latitude').value || null,
+        longitude: document.getElementById('oc-longitude').value || null,
+        capacity: parseInt(document.getElementById('oc-capacity').value || '0'),
+        notes: document.getElementById('oc-notes').value || null,
+    };
+    try {
+        const res = await fetch(id ? `/odcs/${id}` : '/odcs', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }, body: JSON.stringify(body) });
+        const data = await res.json();
+        if (res.status === 422) { showErrors(data.errors); return; }
+        if (!data.success) return showToast(data.message, 'error');
+        showToast(data.message, 'success');
+        closeOdcModal();
+        location.reload();
+    } catch (err) {
+        showToast('Gagal menyimpan ODC', 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// Mapping pelanggan ke ODP
+function openOdpMappingModal(id) {
+    const odp = ODPS.find(x => x.id == id);
+    if (!odp) return;
+    document.getElementById('mapping-odp-id').value = id;
+    document.getElementById('mapping-modal-title').textContent = `Mapping Pelanggan - ${odp.name}`;
+    document.getElementById('mapping-modal-sub').textContent = odp.location ?? '';
+    document.getElementById('mapping-customer-search').value = '';
+    document.getElementById('mapping-distance').textContent = '-';
+    document.getElementById('mapping-selected-info').textContent = hasCoords(odp) ? 'Pilih pelanggan untuk melihat garis kabel.' : 'Koordinat ODP belum diset. Edit ODP dulu untuk mengisi titik lokasi.';
+    document.getElementById('odp-mapping-modal').classList.remove('hidden');
+    renderMappingCustomerOptions();
+    renderCurrentMappedCustomers();
+    setTimeout(() => initMappingMap(odp), 120);
+}
+function closeOdpMappingModal() {
+    document.getElementById('odp-mapping-modal').classList.add('hidden');
+}
+function initMappingMap(odp) {
+    const start = hasCoords(odp) ? toLatLng(odp) : DEFAULT_MAP_CENTER;
+    if (!mappingMap) {
+        mappingMap = L.map('odp-mapping-map').setView(start, hasCoords(odp) ? 17 : 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(mappingMap);
+    }
+    mappingMap.invalidateSize();
+    mappingMarkers.forEach(m => m.remove());
+    mappingMarkers = [];
+    if (mappingLine) { mappingLine.remove(); mappingLine = null; }
+    mappingMap.setView(start, hasCoords(odp) ? 17 : 12);
+    if (hasCoords(odp)) mappingMarkers.push(L.marker(start).addTo(mappingMap).bindPopup(odp.name));
+}
+function renderMappingCustomerOptions() {
+    const odpId = document.getElementById('mapping-odp-id').value;
+    const q = document.getElementById('mapping-customer-search').value.toLowerCase();
+    const rows = CUSTOMERS.filter(c => hasCoords(c))
+        .filter(c => (`${c.name} ${c.customer_number ?? ''} ${c.phone ?? ''} ${c.address ?? ''}`).toLowerCase().includes(q))
+        .sort((a, b) => (a.odp_id == odpId ? -1 : 0) - (b.odp_id == odpId ? -1 : 0));
+    document.getElementById('mapping-customer').innerHTML = rows.map(c => `<option value="${c.id}">${c.name}${c.customer_number ? ' - ' + c.customer_number : ''}${c.odp_name ? ' | ' + c.odp_name : ''}</option>`).join('') || '<option value="">Tidak ada pelanggan berkoordinat</option>';
+}
+function previewOdpCustomerLine() {
+    const odp = ODPS.find(x => x.id == document.getElementById('mapping-odp-id').value);
+    const customer = CUSTOMERS.find(x => x.id == document.getElementById('mapping-customer').value);
+    if (!odp || !customer || !hasCoords(odp) || !hasCoords(customer)) return;
+    const a = toLatLng(odp);
+    const b = toLatLng(customer);
+    const meters = distanceMeters(a, b);
+    if (mappingLine) mappingLine.remove();
+    mappingMarkers.slice(1).forEach(m => m.remove());
+    mappingMarkers = mappingMarkers.slice(0, 1);
+    mappingMarkers.push(L.marker(b).addTo(mappingMap).bindPopup(customer.name));
+    mappingLine = L.polyline([a, b], { color: '#059669', weight: 4, dashArray: '8 8' }).addTo(mappingMap);
+    mappingMap.fitBounds(mappingLine.getBounds(), { padding: [40, 40] });
+    document.getElementById('mapping-distance').textContent = `${meters.toLocaleString('id-ID')} m`;
+    document.getElementById('mapping-selected-info').textContent = `${customer.name} - ${customer.address ?? 'Alamat belum diisi'}`;
+}
+async function saveOdpCustomerMapping() {
+    const odp = ODPS.find(x => x.id == document.getElementById('mapping-odp-id').value);
+    const customer = CUSTOMERS.find(x => x.id == document.getElementById('mapping-customer').value);
+    if (!odp || !customer) return showToast('Pilih pelanggan dulu', 'error');
+    if (!hasCoords(odp)) return showToast('Koordinat ODP belum diset', 'error');
+    const meters = distanceMeters(toLatLng(odp), toLatLng(customer));
+    try {
+        const res = await fetch(`/odps/${odp.id}/customers`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }, body: JSON.stringify({ customer_id: customer.id, cable_distance_meters: meters }) });
+        const data = await res.json();
+        if (!data.success) return showToast(data.message, 'error');
+        const oi = ODPS.findIndex(x => x.id == data.odp.id);
+        if (oi > -1) ODPS[oi] = data.odp;
+        const ci = CUSTOMERS.findIndex(x => x.id == data.customer.id);
+        if (ci > -1) CUSTOMERS[ci] = data.customer;
+        showToast(data.message, 'success');
+        renderMappingCustomerOptions();
+        renderCurrentMappedCustomers();
+    } catch (err) {
+        showToast('Gagal menyimpan mapping', 'error');
+    }
+}
+function renderCurrentMappedCustomers() {
+    const odpId = document.getElementById('mapping-odp-id').value;
+    const rows = CUSTOMERS.filter(c => c.odp_id == odpId);
+    document.getElementById('mapping-current-list').innerHTML = rows.length ? rows.map(c => `
+        <div class="rounded-xl border border-gray-100 p-3 flex items-center justify-between gap-3">
+            <div><p class="text-sm font-semibold text-gray-800">${c.name}</p><p class="text-xs text-gray-400">${c.cable_distance_meters ? Number(c.cable_distance_meters).toLocaleString('id-ID') + ' m' : 'Jarak belum tersimpan'}</p></div>
+            <button onclick="unmapOdpCustomer(${odpId}, ${c.id})" class="text-xs font-semibold text-red-500 hover:text-red-600">Lepas</button>
+        </div>`).join('') : '<p class="text-sm text-gray-400">Belum ada pelanggan.</p>';
+}
+async function unmapOdpCustomer(odpId, customerId) {
+    try {
+        const res = await fetch(`/odps/${odpId}/customers/${customerId}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' } });
+        const data = await res.json();
+        if (!data.success) return showToast(data.message, 'error');
+        const oi = ODPS.findIndex(x => x.id == data.odp.id);
+        if (oi > -1) ODPS[oi] = data.odp;
+        const ci = CUSTOMERS.findIndex(x => x.id == customerId);
+        if (ci > -1) { CUSTOMERS[ci].odp_id = null; CUSTOMERS[ci].odp_name = null; CUSTOMERS[ci].cable_distance_meters = null; }
+        showToast(data.message, 'success');
+        renderMappingCustomerOptions();
+        renderCurrentMappedCustomers();
+    } catch (err) {
+        showToast('Gagal melepas mapping', 'error');
+    }
+}
+
 async function testRouter(id) {
     showToast('Menguji koneksi...', 'info');
     try {
@@ -1028,6 +1542,22 @@ function deleteOdp(id, name) {
         }).catch(() => showToast('Gagal menghapus ODP', 'error'));
 }
 
+function deleteOdc(id, name) {
+    if (!confirm(`Hapus ODC "${name}"? ODP yang terhubung akan dilepas dari ODC ini.`)) return;
+    fetch(`/odcs/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' } })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) return showToast(data.message, 'error');
+            showToast(data.message, 'success');
+            const idx = ODCS.findIndex(o => o.id == id);
+            if (idx > -1) ODCS.splice(idx, 1);
+            const row = document.querySelector(`.odc-row[data-id="${id}"]`);
+            if (row) row.remove();
+            updateOdcStats();
+            updateTabCounts();
+        }).catch(() => showToast('Gagal menghapus ODC', 'error'));
+}
+
 // ─── DOM helpers ─────────────────────────────────────────────────────────
 function upsertRouterRow(r, isNew) {
     const idx = ROUTERS.findIndex(x => x.id == r.id);
@@ -1079,9 +1609,15 @@ function updateOdpStats() {
     document.getElementById('odp-stat-cap').textContent   = ODPS.reduce((s, o) => s + (o.capacity || 0), 0);
 }
 
+function updateOdcStats() {
+    document.getElementById('odc-stat-total').textContent = ODCS.length;
+    document.getElementById('odc-stat-cap').textContent   = ODCS.reduce((s, o) => s + (o.capacity || 0), 0);
+}
+
 function updateTabCounts() {
     document.getElementById('tab-router-count').textContent = document.querySelectorAll('.router-row').length;
     document.getElementById('tab-odp-count').textContent    = document.querySelectorAll('.odp-row').length;
+    document.getElementById('tab-odc-count').textContent    = document.querySelectorAll('.odc-row').length;
 }
 </script>
 

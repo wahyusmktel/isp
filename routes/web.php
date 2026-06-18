@@ -15,6 +15,7 @@ use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\NewsAdminController;
 use App\Http\Controllers\NewsCommentController;
 use App\Http\Controllers\NewsController;
+use App\Http\Controllers\OdcController;
 use App\Http\Controllers\OdpController;
 use App\Http\Controllers\OltMonitoringController;
 use App\Http\Controllers\PackageController;
@@ -153,6 +154,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/odps', [OdpController::class, 'store'])->name('odps.store');
     Route::put('/odps/{odp}', [OdpController::class, 'update'])->name('odps.update');
     Route::delete('/odps/{odp}', [OdpController::class, 'destroy'])->name('odps.destroy');
+    Route::post('/odps/{odp}/customers', [OdpController::class, 'mapCustomer'])->name('odps.customers.map');
+    Route::delete('/odps/{odp}/customers/{customer}', [OdpController::class, 'unmapCustomer'])->name('odps.customers.unmap');
+
+    Route::post('/odcs', [OdcController::class, 'store'])->name('odcs.store');
+    Route::put('/odcs/{odc}', [OdcController::class, 'update'])->name('odcs.update');
+    Route::delete('/odcs/{odc}', [OdcController::class, 'destroy'])->name('odcs.destroy');
 
     Route::get('/pppoe-mapping', [PppoeMappingController::class, 'index'])->name('pppoe-mapping.index');
     Route::get('/pppoe-mapping/{router}/secrets', [PppoeMappingController::class, 'fetchSecrets'])->name('pppoe-mapping.secrets');
