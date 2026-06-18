@@ -14,6 +14,69 @@ use Illuminate\Support\Str;
 
 class HisfocusOltService
 {
+    public function allClients(): array
+    {
+        if (! $this->isConfigured()) {
+            return [
+                'success' => false,
+                'message' => 'Konfigurasi OLT HisFocus belum lengkap.',
+                'clients' => [],
+            ];
+        }
+
+        $session = Http::timeout($this->timeout())
+            ->accept('text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8')
+            ->withOptions(['cookies' => new CookieJar]);
+
+        if (filled($this->username())) {
+            $session->withBasicAuth($this->username(), $this->password());
+        }
+
+        $this->login($session);
+
+        $clients = [];
+        $sources = [];
+        $errors = [];
+
+        foreach ($this->onuListUrls() as $url) {
+            try {
+                $response = $session->get($this->absoluteUrl($url));
+            } catch (ConnectionException $exception) {
+                $errors[] = "Tidak bisa terhubung ke {$url}: {$exception->getMessage()}";
+                continue;
+            }
+
+            if (! $response->successful()) {
+                $errors[] = "{$url}: HTTP {$response->status()}";
+                continue;
+            }
+
+            $rows = $this->parseRows($response->body());
+            foreach ($rows as $row) {
+                $row['_source_url'] = $url;
+                $clients[] = $row;
+            }
+            $sources[] = [
+                'url' => $url,
+                'count' => count($rows),
+            ];
+        }
+
+        $clients = collect($clients)
+            ->unique(fn (array $row) => ($this->value($row, ['id', 'onu_id', 'onuid']) ?: '').'|'.($this->value($row, ['mac_address', 'macaddress']) ?: ''))
+            ->values()
+            ->all();
+
+        return [
+            'success' => count($clients) > 0 || empty($errors),
+            'message' => count($clients) > 0 ? 'Data client OLT berhasil dibaca.' : 'Data client OLT tidak ditemukan.',
+            'clients' => $clients,
+            'sources' => $sources,
+            'errors' => $errors,
+            'base_url' => $this->baseUrl(),
+        ];
+    }
+
     public function customerOpticalInfo(Customer $customer): array
     {
         if (! $this->isConfigured()) {

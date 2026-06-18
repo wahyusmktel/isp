@@ -65,12 +65,20 @@
     <p class="sidebar-label text-[10px] font-semibold uppercase tracking-widest text-gray-600 px-3 pt-4 pb-1">Jaringan</p>
 
     @if(auth()->user()->role === 'admin')
-    <a href="{{ route('network.index') }}" class="sidebar-link {{ request()->routeIs('network.*') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Router & ODP">
+    <a href="{{ route('network.index') }}" class="sidebar-link {{ request()->routeIs('network.index') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Router & ODP">
         <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
             <rect x="2" y="6" width="20" height="8" rx="2"/>
             <path stroke-linecap="round" d="M6 10h.01M10 10h.01M6 14v3M12 14v3M18 14v3"/>
         </svg>
         <span class="sidebar-text whitespace-nowrap">Router & ODP</span>
+    </a>
+
+    <a href="{{ route('network.olt-monitoring') }}" class="sidebar-link {{ request()->routeIs('network.olt-monitoring') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="Monitoring OLT">
+        <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16M7 7v10M17 7v10"/>
+            <circle cx="7" cy="7" r="1"/><circle cx="17" cy="12" r="1"/><circle cx="12" cy="17" r="1"/>
+        </svg>
+        <span class="sidebar-text whitespace-nowrap">Monitoring OLT</span>
     </a>
 
     <a href="{{ route('pppoe-mapping.index') }}" class="sidebar-link {{ request()->routeIs('pppoe-mapping.*') ? 'active' : '' }} flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all" title="PPPoE Mapping">

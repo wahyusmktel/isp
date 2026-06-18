@@ -16,6 +16,7 @@ use App\Http\Controllers\NewsAdminController;
 use App\Http\Controllers\NewsCommentController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\OdpController;
+use App\Http\Controllers\OltMonitoringController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PppoeMappingController;
@@ -141,6 +142,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/isolir/customers/{customer}', [IsolationController::class, 'release'])->name('isolation.customers.release');
 
     Route::get('/network', [RouterController::class, 'index'])->name('network.index');
+    Route::get('/network/olt-monitoring', [OltMonitoringController::class, 'index'])->name('network.olt-monitoring');
     Route::post('/routers', [RouterController::class, 'store'])->name('routers.store');
     Route::put('/routers/{router}', [RouterController::class, 'update'])->name('routers.update');
     Route::delete('/routers/{router}', [RouterController::class, 'destroy'])->name('routers.destroy');
