@@ -28,14 +28,14 @@ $rxBadge = function ($rx) {
         ];
     }
 
-    if ($value >= -25 && $value <= -23) {
+    if ($value < -22 && $value >= -25) {
         return [
             'label' => 'Good',
             'class' => 'bg-green-100 text-green-800 border-green-200',
         ];
     }
 
-    if ($value <= -26) {
+    if ($value < -25) {
         return [
             'label' => 'Critical',
             'class' => 'bg-red-100 text-red-700 border-red-200',
@@ -188,8 +188,8 @@ $rxBadge = function ($rx) {
                         class="px-3 py-2 text-xs rounded-xl border border-gray-200 bg-gray-50 outline-none focus:border-green-500">
                     <option value="">Semua redaman</option>
                     <option value="excellent">Excellent (-15 s/d -22)</option>
-                    <option value="good">Good (-23 s/d -25)</option>
-                    <option value="critical">Critical (&lt;= -26)</option>
+                    <option value="good">Good (&lt; -22 s/d -25)</option>
+                    <option value="critical">Critical (&lt; -25)</option>
                     <option value="warning">Perlu Cek</option>
                     <option value="unknown">Tidak terbaca</option>
                 </select>

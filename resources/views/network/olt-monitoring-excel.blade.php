@@ -60,8 +60,8 @@ $rxStyle = function ($category) {
     <tr><td colspan="16">&nbsp;</td></tr>
     <tr>
         <td class="legend" style="background:#15803d;color:#fff;">Excellent -15 s/d -22 dBm</td>
-        <td class="legend" style="background:#dcfce7;color:#166534;">Good -23 s/d -25 dBm</td>
-        <td class="legend" style="background:#fee2e2;color:#b91c1c;">Critical &lt;= -26 dBm</td>
+        <td class="legend" style="background:#dcfce7;color:#166534;">Good &lt; -22 s/d -25 dBm</td>
+        <td class="legend" style="background:#fee2e2;color:#b91c1c;">Critical &lt; -25 dBm</td>
         <td colspan="13"></td>
     </tr>
     <tr><td colspan="16">&nbsp;</td></tr>
