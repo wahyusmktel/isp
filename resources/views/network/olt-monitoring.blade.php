@@ -57,6 +57,13 @@ $rxBadge = function ($rx) {
             <p class="text-sm text-gray-400 mt-0.5">Daftar seluruh client ONU/ONT dari OLT HisFocus yang sudah terhubung.</p>
         </div>
         <div class="flex items-center gap-2">
+            <a href="{{ route('network.olt-monitoring.export') }}"
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+                </svg>
+                Export Excel
+            </a>
             <a href="{{ route('settings', ['tab' => 'jaringan']) }}"
                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -104,6 +111,57 @@ $rxBadge = function ($rx) {
         @endforeach
     </div>
 
+    <div class="bg-white border border-gray-100 rounded-2xl p-5">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
+            <div>
+                <h2 class="text-sm font-bold text-gray-900">Visual Port Redaman Optik</h2>
+                <p class="text-xs text-gray-400 mt-0.5">Klik port untuk melihat detail ONU/ONT dan distribusi redaman.</p>
+            </div>
+            <div class="flex flex-wrap gap-2 text-[11px]">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-700 text-white font-semibold"><span class="w-2 h-2 rounded-full bg-white"></span>Excellent</span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-100 text-green-800 font-semibold"><span class="w-2 h-2 rounded-full bg-green-500"></span>Good</span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-100 text-red-700 font-semibold"><span class="w-2 h-2 rounded-full bg-red-500"></span>Critical</span>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            @forelse($portGroups as $group)
+            @php
+            $dominant = $group['critical'] > 0 ? 'critical' : ($group['excellent'] >= $group['good'] ? 'excellent' : 'good');
+            $portClass = match($dominant) {
+                'critical' => 'border-red-200 bg-red-50 hover:bg-red-100 text-red-700',
+                'excellent' => 'border-green-700 bg-green-700 hover:bg-green-800 text-white',
+                default => 'border-green-200 bg-green-50 hover:bg-green-100 text-green-800',
+            };
+            @endphp
+            <button type="button"
+                    onclick='openPortDetail(@json($group))'
+                    class="text-left rounded-2xl border p-4 transition-colors {{ $portClass }}">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-wide opacity-75">{{ $group['label'] }}</p>
+                        <p class="text-2xl font-black mt-1">{{ $group['total'] }}</p>
+                        <p class="text-xs opacity-75">{{ $group['online'] }} online · Avg Rx {{ $group['avg_rx'] ?: '-' }} dBm</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-white/25 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 12h5m6 0h5M9 12a3 3 0 106 0 3 3 0 00-6 0zM12 4v5m0 6v5"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 mt-4 text-center">
+                    <div class="rounded-xl bg-white/35 px-2 py-2"><p class="text-sm font-black">{{ $group['excellent'] }}</p><p class="text-[10px] opacity-75">Excellent</p></div>
+                    <div class="rounded-xl bg-white/35 px-2 py-2"><p class="text-sm font-black">{{ $group['good'] }}</p><p class="text-[10px] opacity-75">Good</p></div>
+                    <div class="rounded-xl bg-white/35 px-2 py-2"><p class="text-sm font-black">{{ $group['critical'] }}</p><p class="text-[10px] opacity-75">Critical</p></div>
+                </div>
+            </button>
+            @empty
+            <div class="col-span-full rounded-2xl border border-gray-100 bg-gray-50 p-6 text-center">
+                <p class="text-sm font-semibold text-gray-500">Belum ada port yang dapat divisualisasikan.</p>
+            </div>
+            @endforelse
+        </div>
+    </div>
+
     <div class="bg-white border border-gray-100 rounded-2xl overflow-hidden">
         <div class="px-5 py-4 border-b border-gray-100 flex flex-col lg:flex-row lg:items-center gap-3">
             <div class="flex-1">
@@ -125,6 +183,15 @@ $rxBadge = function ($rx) {
                     <option value="offline">Offline</option>
                     <option value="mapped">Mapped</option>
                     <option value="unmapped">Belum mapped</option>
+                </select>
+                <select id="olt-rx-filter" onchange="filterOltRows()"
+                        class="px-3 py-2 text-xs rounded-xl border border-gray-200 bg-gray-50 outline-none focus:border-green-500">
+                    <option value="">Semua redaman</option>
+                    <option value="excellent">Excellent (-15 s/d -22)</option>
+                    <option value="good">Good (-23 s/d -25)</option>
+                    <option value="critical">Critical (&lt;= -26)</option>
+                    <option value="warning">Perlu Cek</option>
+                    <option value="unknown">Tidak terbaca</option>
                 </select>
             </div>
         </div>
@@ -164,6 +231,7 @@ $rxBadge = function ($rx) {
                         data-search="{{ e($search) }}"
                         data-status="{{ $isOnline ? 'online' : 'offline' }}"
                         data-mapped="{{ $customer ? 'mapped' : 'unmapped' }}"
+                        data-rx="{{ $client['_rx_category'] ?? 'unknown' }}"
                         class="hover:bg-gray-50/50 transition-colors">
                         <td class="px-5 py-4">
                             <p class="text-sm font-bold text-gray-900 font-mono">{{ $fmt($client['id'] ?? null) }}</p>
@@ -232,6 +300,44 @@ $rxBadge = function ($rx) {
         </div>
     </div>
 </div>
+
+<div id="port-detail-modal" class="fixed inset-0 z-50 hidden" aria-modal="true" role="dialog">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closePortDetail()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div id="port-detail-card" class="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[88vh] overflow-hidden flex flex-col scale-95 opacity-0 transition-all duration-200">
+            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
+                <div>
+                    <h2 id="port-detail-title" class="text-base font-bold text-gray-900">Detail Port</h2>
+                    <p id="port-detail-subtitle" class="text-xs text-gray-400 mt-0.5">-</p>
+                </div>
+                <button type="button" onclick="closePortDetail()" class="w-9 h-9 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-5 overflow-y-auto">
+                <div id="port-detail-summary" class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5"></div>
+                <div class="overflow-x-auto rounded-2xl border border-gray-100">
+                    <table class="w-full min-w-[900px]">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="text-left text-xs font-semibold text-gray-400 px-4 py-3">ONU</th>
+                                <th class="text-left text-xs font-semibold text-gray-400 px-4 py-3">Pelanggan</th>
+                                <th class="text-left text-xs font-semibold text-gray-400 px-4 py-3">MAC</th>
+                                <th class="text-left text-xs font-semibold text-gray-400 px-4 py-3">Status</th>
+                                <th class="text-left text-xs font-semibold text-gray-400 px-4 py-3">Rx</th>
+                                <th class="text-left text-xs font-semibold text-gray-400 px-4 py-3">Tx / Temp</th>
+                                <th class="text-left text-xs font-semibold text-gray-400 px-4 py-3">Register</th>
+                            </tr>
+                        </thead>
+                        <tbody id="port-detail-rows" class="divide-y divide-gray-50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -239,17 +345,84 @@ $rxBadge = function ($rx) {
 function filterOltRows() {
     const q = document.getElementById('olt-search').value.trim().toLowerCase();
     const filter = document.getElementById('olt-status-filter').value;
+    const rxFilter = document.getElementById('olt-rx-filter').value;
     let visible = 0;
 
     document.querySelectorAll('#olt-tbody [data-row]').forEach(row => {
         const matchSearch = !q || row.dataset.search.includes(q);
         const matchFilter = !filter || row.dataset.status === filter || row.dataset.mapped === filter;
-        const show = matchSearch && matchFilter;
+        const matchRx = !rxFilter || row.dataset.rx === rxFilter;
+        const show = matchSearch && matchFilter && matchRx;
         row.style.display = show ? '' : 'none';
         if (show) visible++;
     });
 
     document.getElementById('olt-visible').textContent = visible;
+}
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    }[char]));
+}
+
+function rxBadgeClass(category) {
+    if (category === 'excellent') return 'bg-green-700 text-white';
+    if (category === 'good') return 'bg-green-100 text-green-800';
+    if (category === 'critical') return 'bg-red-100 text-red-700';
+    return 'bg-gray-100 text-gray-600';
+}
+
+function openPortDetail(group) {
+    const modal = document.getElementById('port-detail-modal');
+    const card = document.getElementById('port-detail-card');
+    document.getElementById('port-detail-title').textContent = group.label;
+    document.getElementById('port-detail-subtitle').textContent = `${group.total} ONU/ONT · ${group.online} online · Avg Rx ${group.avg_rx || '-'} dBm`;
+    document.getElementById('port-detail-summary').innerHTML = [
+        ['Total', group.total, 'bg-slate-50 text-slate-700'],
+        ['Online', group.online, 'bg-green-50 text-green-700'],
+        ['Excellent', group.excellent, 'bg-green-700 text-white'],
+        ['Good', group.good, 'bg-green-50 text-green-700'],
+        ['Critical', group.critical, 'bg-red-50 text-red-700'],
+    ].map(([label, value, cls]) => `
+        <div class="rounded-2xl p-4 ${cls}">
+            <p class="text-xs font-bold uppercase tracking-wide opacity-75">${label}</p>
+            <p class="text-2xl font-black mt-1">${value}</p>
+        </div>
+    `).join('');
+
+    document.getElementById('port-detail-rows').innerHTML = (group.clients || []).map(client => {
+        const customer = client._customer;
+        return `
+            <tr>
+                <td class="px-4 py-3"><p class="text-sm font-bold font-mono text-gray-900">${escapeHtml(client.id || '-')}</p><p class="text-xs text-gray-400">${escapeHtml(client.name || 'Tanpa nama')}</p></td>
+                <td class="px-4 py-3">${customer ? `<p class="text-sm font-semibold text-blue-600">${escapeHtml(customer.name)}</p><p class="text-xs font-mono text-gray-400">${escapeHtml(customer.pppoe_user || '-')} / ${escapeHtml(customer.ip_address || '-')}</p>` : '<span class="text-xs font-semibold text-gray-500 bg-gray-100 rounded-full px-2.5 py-1">Belum mapped</span>'}</td>
+                <td class="px-4 py-3"><p class="text-xs font-mono text-gray-700">${escapeHtml(client.mac_address || client.macaddress || '-')}</p><p class="text-xs font-mono text-gray-400">${escapeHtml(client.chip_id || '-')}</p></td>
+                <td class="px-4 py-3"><span class="text-xs font-semibold rounded-full px-2.5 py-1 ${client._is_online ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}">${escapeHtml(client.status || '-')}</span></td>
+                <td class="px-4 py-3"><span class="text-xs font-bold rounded-full px-2.5 py-1 ${rxBadgeClass(client._rx_category)}">${escapeHtml(client._rx_label || '-')} · ${escapeHtml(client.rx_power || '-')}</span></td>
+                <td class="px-4 py-3"><p class="text-xs text-gray-700">Tx: <b>${escapeHtml(client.tx_power || '-')}</b></p><p class="text-xs text-gray-400">Temp: ${escapeHtml(client.temperature || '-')}</p></td>
+                <td class="px-4 py-3"><p class="text-xs text-gray-700">${escapeHtml(client.register_time || '-')}</p><p class="text-xs text-gray-400">${escapeHtml(client.offline_reason || '')}</p></td>
+            </tr>
+        `;
+    }).join('');
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        card.classList.remove('scale-95', 'opacity-0');
+        card.classList.add('scale-100', 'opacity-100');
+    }));
+}
+
+function closePortDetail() {
+    const modal = document.getElementById('port-detail-modal');
+    const card = document.getElementById('port-detail-card');
+    card.classList.add('scale-95', 'opacity-0');
+    card.classList.remove('scale-100', 'opacity-100');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }, 180);
 }
 </script>
 @endpush

@@ -143,6 +143,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/network', [RouterController::class, 'index'])->name('network.index');
     Route::get('/network/olt-monitoring', [OltMonitoringController::class, 'index'])->name('network.olt-monitoring');
+    Route::get('/network/olt-monitoring/export', [OltMonitoringController::class, 'exportExcel'])->name('network.olt-monitoring.export');
     Route::post('/routers', [RouterController::class, 'store'])->name('routers.store');
     Route::put('/routers/{router}', [RouterController::class, 'update'])->name('routers.update');
     Route::delete('/routers/{router}', [RouterController::class, 'destroy'])->name('routers.destroy');
