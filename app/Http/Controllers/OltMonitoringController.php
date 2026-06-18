@@ -124,7 +124,7 @@ class OltMonitoringController extends Controller
         $value = $this->rxValue($rx);
         if ($value === null) return false;
 
-        return $value < -25 || $value > -8;
+        return $value < -25;
     }
 
     private function rxCategory(?string $rx): array
@@ -134,7 +134,7 @@ class OltMonitoringController extends Controller
             return ['key' => 'unknown', 'label' => 'Tidak terbaca'];
         }
 
-        if ($value >= -22 && $value <= -15) {
+        if ($value >= -22) {
             return ['key' => 'excellent', 'label' => 'Excellent'];
         }
 
@@ -146,7 +146,7 @@ class OltMonitoringController extends Controller
             return ['key' => 'critical', 'label' => 'Critical'];
         }
 
-        return ['key' => 'warning', 'label' => 'Perlu Cek'];
+        return ['key' => 'critical', 'label' => 'Critical'];
     }
 
     private function rxValue(?string $rx): ?float

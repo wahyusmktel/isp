@@ -21,7 +21,7 @@ $rxBadge = function ($rx) {
 
     $value = (float) $match[0];
 
-    if ($value >= -22 && $value <= -15) {
+    if ($value >= -22) {
         return [
             'label' => 'Excellent',
             'class' => 'bg-green-700 text-white border-green-700',
@@ -43,8 +43,8 @@ $rxBadge = function ($rx) {
     }
 
     return [
-        'label' => 'Perlu Cek',
-        'class' => 'bg-amber-100 text-amber-800 border-amber-200',
+        'label' => 'Critical',
+        'class' => 'bg-red-100 text-red-700 border-red-200',
     ];
 };
 @endphp
@@ -187,10 +187,9 @@ $rxBadge = function ($rx) {
                 <select id="olt-rx-filter" onchange="filterOltRows()"
                         class="px-3 py-2 text-xs rounded-xl border border-gray-200 bg-gray-50 outline-none focus:border-green-500">
                     <option value="">Semua redaman</option>
-                    <option value="excellent">Excellent (-15 s/d -22)</option>
+                    <option value="excellent">Excellent (&gt;= -22)</option>
                     <option value="good">Good (&lt; -22 s/d -25)</option>
                     <option value="critical">Critical (&lt; -25)</option>
-                    <option value="warning">Perlu Cek</option>
                     <option value="unknown">Tidak terbaca</option>
                 </select>
             </div>
